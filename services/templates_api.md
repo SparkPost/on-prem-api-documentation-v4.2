@@ -51,7 +51,7 @@ first non-attachment text/html MIME parts only.
 necessary.
 * The provided email_rfc822 should NOT be dot stuff.  The system dot stuffs before sending the outgoing message.
 * The provided email_rfc822 should NOT contain the SMTP terminator `\r\n.\r\n`.  The system always adds this terminator.
-* The provided email_rfc822 in MIME format will be rejected if SparkPost cannot parse the contents into a MIME tree.
+* The provided email_rfc822 in MIME format will be rejected if Momentum cannot parse the contents into a MIME tree.
 
 ### Options Attributes
 
@@ -61,7 +61,6 @@ Options for a template are described in a JSON object with the following fields:
 |--------------------|:-:       |---------------------------------------|-------------|------------------|
 |open_tracking |boolean |Enable or disable open tracking | no - defaults to the setting at the transmission level | To override the default for a specific transmission, specify the _options.open_tracking_ field upon creation of the transmission. |
 |click_tracking |boolean |Enable or disable click tracking | no - defaults to the setting at the transmission level | To override the default for a specific transmission, specify the _options.click_tracking_ field upon creation of the transmission. |
-|transactional |boolean |Distinguish between transactional and non-transactional messages for unsubscribe and suppression purposes | no - defaults to the setting at the transmission level | To override the default for a specific transmission, specify the _options.transactional_ field upon creation of the transmission. |
 
 ## Error Attributes
 
@@ -283,12 +282,6 @@ Retrieve a single template by specifying its ID in the URI path. By default, the
 updated version is returned. Use the **draft** query parameter to specify a draft or published
 template.
 
-
-The result will include a "last_update_time" field. The "last_update_time" is the time the template was last updated, for both draft and published versions.
-
-If the template was used for message generation, the result will also include a "last_use" field. The "last_use" time represents the last time any version of this template was used (draft or published).
-
-
 + Parameters
     + id (required, string, `11714265276872`) ... ID of the template
     + draft (optional, boolean, `true`) ...If true, returns the most recent draft template.  If false, returns the most recent published template.  If not provided, returns the most recent template version regardless of draft or published.
@@ -308,8 +301,6 @@ If the template was used for message generation, the result will also include a 
             "name" : "Summer Sale!",
             "description" : "",
             "published" : true,
-            "last_update_time": "2014-05-22T15:12:59+00:00",
-            "last_use": "2014-06-02T08:15:30+00:00",
 
             "options": {
               "open_tracking" : false,

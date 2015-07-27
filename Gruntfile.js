@@ -8,7 +8,6 @@ var matchdep = require('matchdep')
         'metrics_api.md',
         'recipient_list_api.md',
         'sending_domains_api.md',
-        'suppression_list_api.md',
         'templates_api.md',
         'transmissions_api.md',
         'webhooks_api.md',
