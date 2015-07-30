@@ -23,7 +23,7 @@ module.exports = function(grunt) {
         concat: {
             options: {
                 banner: 'FORMAT: X-1A' + grunt.util.linefeed +
-                    'HOST: https://api.sparkpost.com/api/v1' +
+                    'HOST: https://your.server.domain/api/v1' +
                     grunt.util.linefeed + grunt.util.linefeed
             },
             prod: {
@@ -92,9 +92,9 @@ module.exports = function(grunt) {
 
         options.body = 'FORMAT: X-1A' + 
             grunt.util.linefeed + 
-            'HOST: https://api.sparkpost.com/api/v1' + 
+            'HOST: https://your.server.domain/api/v1' + 
             grunt.util.linefeed + grunt.util.linefeed + 
-            '# SparkPost API v1' + 
+            '# Momentum API v1' + 
             grunt.util.linefeed +
             fs.readFileSync('./services/' + file, 'utf-8');
     

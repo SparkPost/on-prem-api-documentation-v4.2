@@ -1,8 +1,10 @@
-# SparkPost API v1
-SparkPost API enables client applications to integrate with SparkPost and perform actions associated with account management, message generation, and reporting.
+# Momentum API v1
+Momentum API enables client applications to integrate with Momentum and perform actions associated with account management, message generation, and reporting.
 
-## SparkPost API Endpoint
-**https://api.sparkpost.com/api/v1**
+## Momentum API Endpoint
+**http://your.server.domain/api/v1** (or **https://your.server.domain/api/v1**, if running SSL)
+
+Note that Momentum listens on port 80 (or 443, if running SSL), so no explicit port number is required.
 
 JSON is the basis for its request input and response format.
 
@@ -22,11 +24,14 @@ JSON is the basis for its request input and response format.
 All API's require that you authenticate with every request.
 
 To authenticate with the various API's, specify the "Authorization" header with each request.
-The value of the "Authorization" header must be a valid API key or conform to the standard for Basic authentication.
+The value of the "Authorization" header must be a valid API key.
+Administrators can generate an API key using the UI. For detailed instructions, see [API Keys](https://support.messagesystems.com/docs/web-momo4/web-ui.apikeys.php).
 
-Administrators can generate an API key using the UI. Please take care to record and safeguard your API keys at all times. You cannot retrieve an API key after it has been created.
+Please take care to record and safeguard your API keys at all times. You cannot retrieve an API key after it has been created.
 
 For examples of supplying the Authorization header, refer to the cURL example below or any of the individual API request examples.
+
+API authentication is enabled by default. If your system administrator has disabled API authentication, the "Authorization" header, shown in the examples, is no longer required.
 
 ## Using cURL
 If you are using cURL to call the API, you must include the resource URI in quotes when you pass in multiple query parameters separated by an **&**.
@@ -37,15 +42,5 @@ For example:
 curl -v \
 -H "Content-Type: application/json" \
 -H "Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf" \
--X GET "https://api.sparkpost.com/api/v1/metrics/deliverability/aggregate?campaigns=testjob&from=2014-01-23T14:00&metrics=count_targeted,count_sent,count_accepted&protocols=smtp&timezone=America%2FNew_York&to=2014-06-23T15:50"
+-X GET "http://your.server.domain/api/v1/metrics/deliverability/aggregate?campaigns=testjob&from=2014-01-23T14:00&metrics=count_targeted,count_sent,count_accepted&protocols=smtp&timezone=America%2FNew_York&to=2014-06-23T15:50"
 ```
-
-or 
-
-```
-curl -v \
--H "Content-Type: application/json" \
--u <APIKey>: \
--X GET "https://api.sparkpost.com/api/v1/metrics/deliverability/aggregate?campaigns=testjob&from=2014-01-23T14:00&metrics=count_targeted,count_sent,count_accepted&protocols=smtp&timezone=America%2FNew_York&to=2014-06-23T15:50"
-```
-
