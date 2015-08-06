@@ -7,9 +7,8 @@ Momentum API enables client applications to integrate with Momentum and perform 
 ## Momentum API Endpoint
 **http://your.server.domain/api/v1** (or **https://your.server.domain/api/v1**, if running SSL)
 
-Note that Momentum listens on port 80 (or 443, if running SSL), so no explicit port number is required.
-
-JSON is the basis for its request input and response format.
+* JSON is the basis for its request input and response format.
+* Momentum listens on port 80 (or 443, if running SSL), so no explicit port number is required.
 
 ## API Conventions
 * API versioning is handled using a major version number in the URL, e.g. /api/v1/endpoint.
@@ -24,17 +23,13 @@ JSON is the basis for its request input and response format.
 * The JSON number type is bounded to a signed 32-bit integer.
 
 ## Authentication
-All API's require that you authenticate with every request.
-
-To authenticate with the various API's, specify the "Authorization" header with each request.
-The value of the "Authorization" header must be a valid API key.
-Administrators can generate an API key using the UI. For detailed instructions, see [API Keys](https://support.messagesystems.com/docs/web-momo4/web-ui.apikeys.php).
-
-Please take care to record and safeguard your API keys at all times. You cannot retrieve an API key after it has been created.
-
-For examples of supplying the Authorization header, refer to the cURL example below or any of the individual API request examples.
-
-API authentication is enabled by default. If your system administrator has disabled API authentication, the "Authorization" header, shown in the examples, is no longer required.
+* All API's require that you authenticate with every request.
+* To authenticate with the various API's, specify the "Authorization" header with each request.
+* The value of the "Authorization" header must be a valid API key.
+* Administrators can generate an API key using the UI. For detailed instructions, see [API Keys](https://support.messagesystems.com/docs/web-momo4/web-ui.apikeys.php).
+* Please take care to record and safeguard your API keys at all times. You cannot retrieve an API key after it has been created.
+* For examples of supplying the Authorization header, refer to the cURL example below or any of the individual API request examples.
+* API authentication is enabled by default. If your system administrator has disabled API authentication, the "Authorization" header, shown in the examples, is no longer required.
 
 ## Using cURL
 If you are using cURL to call the API, you must include the resource URI in quotes when you pass in multiple query parameters separated by an **&**.
@@ -115,8 +110,6 @@ Whitespace within the braces is ignored.  All of the following are equivalent:
 {{  value   }}
 ```
 
-**Note**
-
 However, no spaces are allowed when substitution data is used in a query string.
 In the following example, no whitespace is allowed within the braces:
 
@@ -194,8 +187,6 @@ Substitution statements that exist on their own line of the template will **not*
 produce a blank line in the resulting output.  This is a convenience to the
 template writer.  In addition, any whitespace after the closing **}}** and before
 the `LF` or `CRLF` will **not** be present in the output. 
-
-**Note**
 
 These rules do not apply to substitution expressions.
 
@@ -494,8 +485,6 @@ The relational and logical operators are as follows:
 The substitution language uses the `each` keyword for iteration.
 The value at each index of an array can be accessed within the each loop by using the `loop_var` variable. When using the `each` keyword to iterate over an array, the `loop_index` variable can be used to get the current index.
 
-**Note**
-
 These examples continue to use the sample data given above.
 
 For example, use the following syntax to iterate over a JSON array of strings
@@ -531,8 +520,6 @@ The following example uses `shopping_cart` and `a_nested_array`:
   {{end}}
 {{end}}
 ```
-
-**Note** 
 
 The preceding example uses indentation for ease of reading.
 The indentation will appear in the rendered content, so it is not advisable to indent a production template. 
@@ -609,7 +596,7 @@ need to be structured as:
 </body>
 ```
 
-Note: The dynamic content will be correctly inserted *without* html escaping,
+The dynamic content will be correctly inserted *without* html escaping,
 regardless of whether double or triple curly braces are used.  There is no need to use triple curly braces in this case.
 
 
@@ -676,7 +663,8 @@ A full transmission json example follows:
     "html": "<p>Today's special offers</p><ul>\n{{each offers}}\n<li>{{render_dynamic_content(dynamic_html[loop_var])}}</li>\n{{end}}\n</ul>",
     "from": "test@example.com",
     "subject": "offers"
-  }
+  },
+  "return_path": "test@example.com"
 }
 ```
 
@@ -731,21 +719,130 @@ The four macros for outputting braces are listed below followed by their output:
 * `closing_triple_curly()` - }}}
 
 
+### Registering Custom Macros
+
+Custom macros may be written in lua and registered with Momentum using the `slt2.register_macros` function.
+
+To define a custom macro, the lua code for the macro must exist in a lua file that
+is loaded by Momentum's scriptlet module.  Custom macros *cannot* be defined inline in a template.
+
+The following example shows the steps necessary to register a custom macro called `to_upper`:
+
+Create a new lua file (the name of the file does not matter): /opt/msys/ecelerity/etc/conf/default/my_macros.lua
+
+```
+-- load the slt2 templating engine
+local slt2 = require("msys.slt2")
+
+-- load the string module, which our custom macro will make use of
+require("string")
+
+-- create an empty macros table
+local macros = { }
+
+-- define a "to_upper" function as an entry in the macros table
+function macros.to_upper(text)
+  return string.upper(text)
+end
+
+-- register all functions in the macros table
+slt2.register_macros(macros)
+```
+
+Configure ecelerity.conf such that my_macros.lua is loaded in the scriptlet module:
+
+```
+scriptlet "scriptlet" {
+  script "my_macros" {
+    source = "my_macros"
+  }
+}
+```
+
+After a config reload, the to_upper macro will be available to be used in a template:
+
+```
+You live in {{ to_upper(state) }}
+```
+
+Note that slt2.register_macros takes a table of functions as the argument.
+Multiple macros may be registered at once as seen in the example below:
+
+```
+local slt2 = require("msys.slt2")
+require("msys.db")
+
+local macros = { }
+
+function macros.print_name(person)
+  if person == nil then
+    return ""
+  end
+
+  local name = person.firstname
+  if person.lastname then
+    name = name .. " " .. person.lastname
+  end
+
+  return name
+end
+
+function macros.total_cost(items)
+  local total = 0
+  for index, item in items do
+    total = total + item.cost
+  end
+
+  return total
+end
+
+function macros.hair_color(username)
+  local rowset, err = msys.db.query(
+    "example", "SELECT hair_color FROM usernames WHERE username = ?",
+    { username }, { raise_error = true } )
+
+  for row in rowset do
+    return row.hair_color
+  end
+  return "unknown"
+end
+
+-- register all three macros
+slt2.register_macros(macros)
+```
+
+Once registered, the macros can be used in a template as follows:
+
+```
+Hello {{ print_name(person) }}
+Your total is {{ total_cost(items) }}
+Your haircolor is {{ hair_color(person.username) }}
+```
+
+*Note:*
+
+The custom macro will be called when generating a message for each recipient in the transmission.
+The generation jobs run in a threadpool. The custom macro may execute work such as database lookups.
+The developer of a custom macro must be aware that this will increase the latency of the generation process,
+because each database lookup will increase the time taken to complete generation for a particular recipient.
+
+
 
 ###  Reserved Recipient Substitution Variables
 
-The following substitution variables are reserved
-automatically available for each recipient:
+The following substitution variables are reserved and automatically available for each recipient:
 
 * `address.name`: Recipient's name from the _address.name_ recipient json field
 * `email` and `address.email`: Recipient's email address from the _address_ or _address.email_ recipient json field
+* `return_path`: Return path from the transmission or recipients json field
 
 Example:
 
 ```
 Hello {{address.name}}
-Your email is {{address.email}}
+Your email is {{address.email}} and your return path is {{return_path}}
 ```
+
 
 ### Substitutions in email_rfc822 Headers
 
@@ -775,9 +872,15 @@ MIME structure.  The Content-Type will be updated appropriately.
 * If after substitution, a header value contains 8-bit data, then the header
 value will be RFC2047 base64 encoded before being written back to the headers structure.
 
+
+### Substitutions in MCMT
+
+See [MCMT](https://support.messagesystems.com/docs/web-momo4/conf.ref.changes.mcmt.php).
+
+
 # Group Metrics
 
-SparkPost logs copious amounts of statistical, real-time data about message processing, message
+Momentum logs copious amounts of statistical, real-time data about message processing, message
 disposition, and campaign performance.  This reporting data is available in the UI or through the Metrics API.  The Metrics API provides a variety of endpoints enabling you to retrieve a summary of the data, data grouped by a specific qualifier, or data by event type.  Within each endpoint, you can also apply various filters to drill down to the data for your specific reporting needs.
 
 ## Metrics API Deliverability Glossary
@@ -786,9 +889,9 @@ Definitions for terms found in Metrics API
 
 | Term     | Definition    |
 |---------:|:--------------|
-|`count_targeted` | Messages successfully injected into SparkPost as well as rejected by it|
-|`count_injected` | Messages injected to or received by SparkPost|
-|`count_sent` | Messages that SparkPost attempted to deliver, which includes both Deliveries and In-Band Bounces|
+|`count_targeted` | Messages successfully injected into Momentum as well as rejected by it|
+|`count_injected` | Messages injected to or received by Momentum|
+|`count_sent` | Messages that Momentum attempted to deliver, which includes both Deliveries and In-Band Bounces|
 |`count_accepted` | Messages an ISP or other remote domain accepted (less Out-of-Band Bounces)|
 |`count_delivered_first` | Messages delivered on the first attempt|
 |`count_delivered_subsequent` | Messages delivered that required more than one delivery attempt|
@@ -804,24 +907,13 @@ Definitions for terms found in Metrics API
 |`count_admin_bounce` | Total number of Bounced messages due to admin bounce classification reasons, also includes Rejected|
 |`count_undetermined_bounce` | Total number of Bounced messages due to undetermined bounce reasons|
 |`count_rejected` | Messages rejected due to policy or that failed to generate|
-|`count_policy_rejection` | Messages rejected by SparkPost due to policy|
+|`count_policy_rejection` | Messages rejected by Momentum due to policy|
 |`count_generation_failed` | Message generation failed for an intended recipient|
-|`count_generation_rejection` | Messages rejected by SparkPost due to policy|
-|`open_rate` | Percentage of Targeted messages that were rendered or had at least one link selected|
-|`click_through_rate` | Percentage of Targeted messages that had at least one link selected|
-|`bounce_rate` | Percentage of Targeted messages that Bounced|
-|`hard_bounce_rate` | Percentage of Targeted messages that Hard Bounced|
-|`soft_bounce_rate` | Percentage of Targeted messages that Soft Bounced|
-|`block_bounce_rate` | Percentage of Targeted messages that Block Bounced|
-|`admin_bounce_rate` | Percentage of Targeted messages that Admin Bounced|
-|`undetermined_bounce_rate` | Percentage of Targeted messages that Undetermined Bounced|
+|`count_generation_rejection` | Messages rejected by Momentum due to policy|
 |`count_inband_bounce` | Messages that bounced on delivery attempt during the SMTP session|
 |`count_outofband_bounce` | Messages that the ISP bounced subsequent to a successful delivery|
 |`count_delayed` | Total number of delays due to any temporary failure|
 |`count_delayed_first` | Messages delayed on the first delivery attempt|
-|`avg_delivery_time_first` | Average delivery time in milliseconds (latency) for messages delivered on the first attempt|
-|`avg_delivery_time_subsequent` | Average delivery time in milliseconds (latency) for messages delivered that required more than one attempt|
-|`avg_msg_size` | Average size of delivered messages, in bytes (including attachments)|
 |`total_msg_volume` | Total size of delivered messages, in bytes (including attachments)|
 |`count_spam_complaint` | Number of spam complaints received from an ISP|
 
@@ -856,6 +948,26 @@ list of URIs that exists within the Metrics API.
                 {
                   "href": "/api/v1/metrics/domains",
                   "rel": "domains",
+                  "method": "GET"
+                },
+                {
+                  "href": "/api/v1/metrics/binding-groups",
+                  "rel": "binding-groups",
+                  "method": "GET"
+                },
+                {
+                  "href": "/api/v1/metrics/bindings",
+                  "rel": "bindings",
+                  "method": "GET"
+                },
+                {
+                  "href": "/api/v1/metrics/nodes",
+                  "rel": "nodes",
+                  "method": "GET"
+                },
+                {
+                  "href": "/api/v1/metrics/protocols",
+                  "rel": "protocols",
                   "method": "GET"
                 }
             ]
@@ -917,7 +1029,7 @@ Provides links to all child URIs within the Metrics API.
     [Discoverability Links][]
 
 
-## Deliverability Metrics [/metrics/deliverability{?from,to,domains,campaigns,templates,sandbox,metrics,timezone}]
+## Deliverability Metrics [/metrics/deliverability{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone}]
 
 
 + Model
@@ -1121,7 +1233,12 @@ aggregate data, which can be used as "group by" qualifiers.
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics for filtering
 
         + Values
@@ -1171,7 +1288,7 @@ aggregate data, which can be used as "group by" qualifiers.
 
 
 
-## Deliverability Metrics by Domain [/metrics/deliverability/domain{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,order_by,limit}]
+## Deliverability Metrics by Domain [/metrics/deliverability/domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,order_by,limit}]
 
 + Model
 
@@ -1354,10 +1471,13 @@ Provides aggregate metrics grouped by domain over the time window specified.
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
   + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + metrics (required, list) ... Comma-delimited list of metrics for filtering
         
         + Values
@@ -1408,9 +1528,481 @@ Provides aggregate metrics grouped by domain over the time window specified.
   [Deliverability Metrics by Domain][]
 
 
+## Deliverability Metrics by Binding [/metrics/deliverability/binding{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
++ Model
+
+    + Body
+
+        ```
+        {
+          "results": [
+            {
+              "binding": "binding-0",
+              "count_targeted": 34432,
+              "count_injected": 32323,
+              "count_rejected": 2343,
+              "count_sent": 34344
+            },
+            {
+              "binding": "binding-1",
+              "count_targeted": 34432,
+              "count_injected": 32323,
+              "count_rejected": 2343,
+              "count_sent": 34344
+            }
+          ]
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type":"object",
+          "$schema": "http://json-schema.org/draft-03/schema",
+          "required":false,
+          "properties":{
+            "results": {
+              "type":"array",
+              "required":false,
+              "items":
+                {
+                  "type":"object",
+                  "required":false,
+                  "properties":{
+                    "binding": {
+                      "type":"string",
+                      "required":false
+                    },
+                    "count_accepted": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_admin_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_block_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_clicked": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delayed_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delayed": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered_subsequent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_generation_failed": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_generation_rejection": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_hard_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_inband_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_injected": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_outofband_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_policy_rejection": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_rejected": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_rendered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_sent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_soft_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_spam_complaint": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_targeted": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_undetermined_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_clicked": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_confirmed_opened": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_rendered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_delivery_time_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_delivery_time_subsequent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_msg_volume": {
+                      "type":"number",
+                      "required":false
+                    }
+                  }
+                }
+            }
+          }
+        }
+        ```
 
 
-## Deliverability Metrics by Campaign [/metrics/deliverability/campaign{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit,order_by}]
+### Deliverability Metrics by Binding [GET]
+
+Provides aggregate metrics grouped by binding over the time window specified.
+
++ Parameters
+  + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
+  + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
+  + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
+  + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
+  + metrics (required, list, `count_targeted`) ... Comma-delimited list of metrics for filtering
+      + Values
+          + `count_injected`
+          + `count_bounce`
+          + `count_rejected`
+          + `count_delivered`
+          + `count_delivered_first`
+          + `count_delivered_subsequent`
+          + `total_delivery_time_first`
+          + `total_delivery_time_subsequent`
+          + `total_msg_volume`
+          + `count_policy_rejection`
+          + `count_generation_rejection`
+          + `count_generation_failed`
+          + `count_inband_bounce`
+          + `count_outofband_bounce`
+          + `count_soft_bounce`
+          + `count_hard_bounce`
+          + `count_block_bounce`
+          + `count_admin_bounce`
+          + `count_undetermined_bounce`
+          + `count_delayed`
+          + `count_delayed_first`
+          + `count_rendered`
+          + `count_unique_rendered`
+          + `count_unique_confirmed_opened`
+          + `count_clicked`
+          + `count_unique_clicked`
+          + `count_targeted`
+          + `count_sent`
+          + `count_accepted`
+          + `count_spam_complaint`
+  + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
+  + limit (optional, int, `5`) ... Maximum number of results to return
+  + order_by (optional, string, `count_injected`) ... Metric by which to order results
+
++ Request
+
+  + Headers
+
+            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+            Accept: application/json
+
++ Response 200
+
+
+## Deliverability Metrics by Binding Group [/metrics/deliverability/binding-group{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
+
++ Model
+
+    + Body
+
+        ```
+        {
+          "results": [
+            {
+              "binding_group": "bg-0",
+              "count_targeted": 34432,
+              "count_injected": 32323,
+              "count_rejected": 2343,
+              "count_sent": 34344
+            },
+            {
+              "binding_group": "bg-1",
+              "count_targeted": 34432,
+              "count_injected": 32323,
+              "count_rejected": 2343,
+              "count_sent": 34344
+            }
+          ]
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type":"object",
+          "$schema": "http://json-schema.org/draft-03/schema",
+          "required":false,
+          "properties":{
+            "results": {
+              "type":"array",
+              "required":false,
+              "items":
+                {
+                  "type":"object",
+                  "required":false,
+                  "properties":{
+                    "binding_group": {
+                      "type":"string",
+                      "required":false
+                    },
+                    "count_accepted": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_admin_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_block_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_clicked": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delayed_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delayed": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered_subsequent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_generation_failed": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_generation_rejection": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_hard_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_inband_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_injected": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_outofband_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_policy_rejection": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_rejected": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_rendered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_sent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_soft_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_spam_complaint": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_targeted": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_undetermined_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_clicked": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_confirmed_opened": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_rendered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_delivery_time_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_delivery_time_subsequent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_msg_volume": {
+                      "type":"number",
+                      "required":false
+                    }
+                  }
+                }
+            }
+          }
+        }
+        ```
+
+### Deliverability Metrics by Binding Group [GET]
+
+Provides aggregate metrics grouped by binding group over the time window specified.
+
++ Parameters
+  + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
+  + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
+  + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
+  + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
+  + metrics (required, list, `count_targeted`) ... Comma-delimited list of metrics for filtering
+      + Values
+          + `count_injected`
+          + `count_bounce`
+          + `count_rejected`
+          + `count_delivered`
+          + `count_delivered_first`
+          + `count_delivered_subsequent`
+          + `total_delivery_time_first`
+          + `total_delivery_time_subsequent`
+          + `total_msg_volume`
+          + `count_policy_rejection`
+          + `count_generation_rejection`
+          + `count_generation_failed`
+          + `count_inband_bounce`
+          + `count_outofband_bounce`
+          + `count_soft_bounce`
+          + `count_hard_bounce`
+          + `count_block_bounce`
+          + `count_admin_bounce`
+          + `count_undetermined_bounce`
+          + `count_delayed`
+          + `count_delayed_first`
+          + `count_rendered`
+          + `count_unique_rendered`
+          + `count_unique_confirmed_opened`
+          + `count_clicked`
+          + `count_unique_clicked`
+          + `count_targeted`
+          + `count_sent`
+          + `count_accepted`
+          + `count_spam_complaint`
+  + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
+  + limit (optional, int, `5`) ... Maximum number of results to return
+  + order_by (optional, string, `count_injected`) ... Metric by which to order results
+
++ Request
+
+  + Headers
+
+            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+            Accept: application/json
+
++ Response 200 (application/json)
+
+  [Deliverability Metrics by Binding Group][]
+
+
+## Deliverability Metrics by Campaign [/metrics/deliverability/campaign{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
 
 
 + Model
@@ -1595,7 +2187,12 @@ Provides aggregate metrics grouped by campaign over the time window specified.
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics for filtering
       
         + Values
@@ -1646,7 +2243,7 @@ Provides aggregate metrics grouped by campaign over the time window specified.
   [Deliverability Metrics by Campaign][]
 
 
-## Deliverability Metrics by Template [/metrics/deliverability/template{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit,order_by}]
+## Deliverability Metrics by Template [/metrics/deliverability/template{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
 
 
 + Model
@@ -1831,7 +2428,12 @@ Provides aggregate metrics grouped by template over the time window specified.
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics for filtering
       
         + Values
@@ -1882,7 +2484,7 @@ Provides aggregate metrics grouped by template over the time window specified.
   [Deliverability Metrics by Template][]
 
 
-## Deliverability Metrics by Watched Domain [/metrics/deliverability/watched-domain{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit,order_by}]
+## Deliverability Metrics by Watched Domain [/metrics/deliverability/watched-domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
 
 + Model
 
@@ -2068,7 +2670,12 @@ in the world.
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics for filtering
         + Values
             + `count_injected`
@@ -2118,7 +2725,7 @@ in the world.
   [Deliverability Metrics by Watched Domain][]
 
 
-## Time Series [/metrics/deliverability/time-series{?from,to,domains,campaigns,templates,sandbox,precision,metrics,timezone}]
+## Time Series [/metrics/deliverability/time-series{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,precision,metrics,timezone}]
 
 
 + Model
@@ -2357,7 +2964,12 @@ The following table describes the validation for the **precision** parameter:
     + domains (optional, list `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains for filtering
     + campaigns (optional, list, `summerSale,promotionX`) ... Comma-delimited list of campaigns for filtering
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes by which to filter
+    + bindings (optional, list, `bindingA,bindingB,bindingC`) ... Comma-delimited list of bindings for filtering
+    + binding_groups (optional, list, `bg1,bg2,bg3`) ... Comma-delimited list of binding groups for filtering
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
     + precision (optional, string, `day`) ... Precision of timeseries data returned
 
         + Values
@@ -2418,7 +3030,7 @@ The following table describes the validation for the **precision** parameter:
   [Time Series][]
 
 
-## Bounce Reasons [/metrics/deliverability/bounce-reason{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit}]
+## Bounce Reasons [/metrics/deliverability/bounce-reason{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit}]
 
 + Model
 
@@ -2518,7 +3130,12 @@ Provides deliverability metrics, specific to bounce events, grouped by the bounc
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols to include
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics to include
         
         + Values
@@ -2541,7 +3158,7 @@ Provides deliverability metrics, specific to bounce events, grouped by the bounc
   [Bounce Reasons][]
 
 
-## Bounce Reasons By Domain [/metrics/deliverability/bounce-reason/domain{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit}]
+## Bounce Reasons By Domain [/metrics/deliverability/bounce-reason/domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit}]
 
 + Model
 
@@ -2647,7 +3264,12 @@ Provides deliverability metrics, specific to bounce events, grouped by the domai
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols to include
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics to include
         
         + Values
@@ -2670,7 +3292,7 @@ Provides deliverability metrics, specific to bounce events, grouped by the domai
   [Bounce Reasons By Domain][]
 
 
-## Bounce Classifications [/metrics/deliverability/bounce-classification{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit}]
+## Bounce Classifications [/metrics/deliverability/bounce-classification{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit}]
 
 + Model
 
@@ -2754,7 +3376,7 @@ Provides deliverability metrics, specific to bounce events, grouped by the domai
 
 ### Bounce Classification Metrics [GET]
 
-Provides deliverability metrics, specific to bounce events, grouped by the bounce classification. (See [Bounce Classification Codes.](https://www.sparkpost.com/docs/bounce-classification-codes))
+Provides deliverability metrics, specific to bounce events, grouped by the bounce classification. (See [Bounce Classification Codes.](https://support.messagesystems.com/docs/web-momo4/bounce_logger.classification.codes.php))
 
 + Parameters
     + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
@@ -2762,7 +3384,12 @@ Provides deliverability metrics, specific to bounce events, grouped by the bounc
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-5`limited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+        + Values
+            + `smtp`
     + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
     + metrics (required, list) ... Comma-delimited list of metrics to include
         
@@ -2785,7 +3412,7 @@ Provides deliverability metrics, specific to bounce events, grouped by the bounc
   [Bounce Classifications][]
 
 
-## Rejection Reasons [/metrics/deliverability/rejection-reason{?from,to,domains,campaigns,templates,sandbox,timezone,limit}]
+## Rejection Reasons [/metrics/deliverability/rejection-reason{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone,limit}]
 
 + Model
 
@@ -2858,10 +3485,13 @@ Provides deliverability metrics, specific to rejection events, grouped by the re
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
   + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
   + limit (optional, int, `5`) ... Maximum number of results to return
 
@@ -2870,7 +3500,7 @@ Provides deliverability metrics, specific to rejection events, grouped by the re
   [Rejection Reasons][]
 
 
-## Rejection Reasons By Domain [/metrics/deliverability/rejection-reason/domain{?from,to,domains,campaigns,templates,sandbox,timezone,limit}]
+## Rejection Reasons By Domain [/metrics/deliverability/rejection-reason/domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone,limit}]
 
 + Model
 
@@ -2948,11 +3578,14 @@ Provides deliverability metrics, specific to rejection events, grouped by the do
   + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
-  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
   + limit (optional, int, `5`) ... Maximum number of results to return
 
@@ -2961,7 +3594,7 @@ Provides deliverability metrics, specific to rejection events, grouped by the do
   [Rejection Reasons By Domain][]
 
 
-## Delay Reasons [/metrics/deliverability/delay-reason{?from,to,domains,campaigns,templates,sandbox,timezone,limit}]
+## Delay Reasons [/metrics/deliverability/delay-reason{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone,limit}]
 
 + Model
 
@@ -3027,11 +3660,14 @@ Provides deliverability metrics, specific to delay events, grouped by the delay 
   + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
-  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
   + limit (optional, int, `5`) ... Maximum number of results to return
 
@@ -3047,7 +3683,7 @@ Provides deliverability metrics, specific to delay events, grouped by the delay 
   [Delay Reasons][]
 
 
-## Delay Reasons By Domain [/metrics/deliverability/delay-reason/domain{?from,to,domains,campaigns,templates,sandbox,timezone,limit}]
+## Delay Reasons By Domain [/metrics/deliverability/delay-reason/domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone,limit}]
 
 + Model
 
@@ -3119,11 +3755,14 @@ Provides deliverability metrics, specific to delay events, grouped by the domain
   + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
-  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
   + limit (optional, int, `5`) ... Maximum number of results to return
 
@@ -3227,7 +3866,7 @@ name (or URL if no link name exists).
   [Engagement Details][]
 
 
-## Deliveries By Attempt [/metrics/deliverability/attempt{?from,to,domains,campaigns,templates,sandbox,timezone}]
+## Deliveries By Attempt [/metrics/deliverability/attempt{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone}]
 
 + Model
 
@@ -3288,10 +3927,13 @@ Provides aggregate count of deliveries grouped by the attempt number.
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
   + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
 
 + Request
@@ -3305,6 +3947,125 @@ Provides aggregate count of deliveries grouped by the attempt number.
 
   [Deliveries By Attempt][]
 
+## Binding Groups List [/metrics/binding-groups]
+
++ Model (application/json)
+
+    + Body
+
+        ```
+        {
+          "results": {
+             "binding-groups": [
+             "bg-1",
+             "bg-2",
+             "bg-3",
+             "bg-4",
+             "bg-5"
+            ]
+          }
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "results": {
+              "type": "object",
+              "required": true,
+              "properties": {
+                "binding-groups": {
+                  "type": "array",
+                  "required": false
+                }
+              }
+            }
+          }
+        }
+        ```
+
+### Binding Groups List [GET]
+
+Returns a list of binding groups that the Metrics API contains data on.
+
++ Parameters
+    + match (optional, string, `example`) ... Only return results containing this string
+    + limit (optional, int, `5`) ... Maximum number of results to return
+
++ Request
+
+  + Headers
+      Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+      Accept: application/json
+
+
++ Response 200
+
+    [Binding Groups List][]
+
+
+## Bindings List [/metrics/bindings]
+
++ Model (application/json)
+
+    + Body
+
+        ```
+        {
+          "results": {
+             "bindings": [
+               "binding-1",
+               "binding-2",
+               "binding-3",
+               "binding-4",
+               "binding-5"
+            ]
+          }
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "results": {
+              "type": "object",
+              "required": true,
+              "properties": {
+                "bindings": {
+                  "type": "array",
+                  "required": false
+                }
+              }
+            }
+          }
+        }
+        ```
+
+### Bindings List [GET]
+
+Returns a list of bindings that the Metrics API contains data on.
+
++ Parameters
+    + match (optional, string, `example`) ... Only return results containing this string
+    + limit (optional, int, `5`) ... Maximum number of results to return
+
++ Request
+
+  + Headers
+      Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+      Accept: application/json
+
++ Response 200
+
+ [Bindings List][]
 
 
 ## Campaigns List [/metrics/campaigns]
@@ -3353,7 +4114,7 @@ Provides aggregate count of deliveries grouped by the attempt number.
 Returns a list of campaigns that the Metrics API contains data on.
 
 + Parameters
-    + match (optional, string, `example`) ... Only return results containing this string 
+    + match (optional, string, `example`) ... Only return results containing this string
     + limit (optional, int, `5`) ... Maximum number of results to return
 
 + Request
@@ -3414,7 +4175,7 @@ Returns a list of campaigns that the Metrics API contains data on.
 Returns a list of domains that the Metrics API contains data on.
 
 + Parameters
-    + match (optional, string, `example`) ... Only return results containing this string 
+    + match (optional, string, `example`) ... Only return results containing this string
     + limit (optional, int, `5`) ... Maximum number of results to return
 
 + Request
@@ -3427,6 +4188,117 @@ Returns a list of domains that the Metrics API contains data on.
 + Response 200
 
   [Domains List][]
+
+## Nodes List [/metrics/nodes]
+
++ Model (application/json)
+
+    + Body
+
+        ```
+        {
+          "results": {
+             "nodes": [
+               "advertising-1.example.com",
+               "advertising-2.example.com",
+               "affiliate-1.example.com",
+               "affiliate-2.example.com",
+               "affiliate-3.example.com"
+            ]
+          }
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "results": {
+              "type": "object",
+              "required": true,
+              "properties": {
+                "nodes": {
+                  "type": "array",
+                  "required": false
+                }
+              }
+            }
+          }
+        }
+        ```
+
+### Nodes List [GET]
+
+Returns a list of nodes that the Metrics API contains data on.
+
++ Request
+
+  + Headers
+      Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+      Accept: application/json
+
++ Response 200
+
+ [Nodes List][]
+
+
+## Protocols List [/metrics/protocols]
+
++ Model (application/json)
+
+    + Body
+
+        ```
+        {
+          "results": {
+             "protocols": [
+               "smtp",
+               "smpp",
+               "mm7",
+               "gcm",
+               "apns"
+            ]
+          }
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "results": {
+              "type": "object",
+              "required": true,
+              "properties": {
+                "protocols": {
+                  "type": "array",
+                  "required": false
+                }
+              }
+            }
+          }
+        }
+        ```
+
+### Protocols List [GET]
+
+Returns a list of protocols that the Metrics API contains data on.
+
++ Request
+
+  + Headers
+      Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+      Accept: application/json
+
++ Response 200
+
+ [Protocols List][]
 
 # Group Recipient Lists
 
@@ -3453,9 +4325,9 @@ Recipients are described in a JSON array with the following fields:
 | Field         | Type     | Description                           | Required   | Notes   |
 |------------------------|:-:       |---------------------------------------|-------------|--------|
 |address | JSON object or string | Address information for a recipient  | yes | See the Address Attributes. |
+|return_path | string |Email to use for envelope FROM | no | To support [VERP] (https://support.messagesystems.com/docs/web-momo4/glossary.php#gloss.verp), this field provides a specific recipient a unique envelope MAIL FROM.|
 |tags | JSON array |Array of text labels associated with a recipient | no | Tags are available in Webhook events.  Maximum number of tags - 10 per recipient, 100 system wide.  Any tags over the limits are ignored.|
-|metadata | JSON object| Key/value pairs associated with a recipient |no | Metadata is available during events through the Webhooks and is provided to the substitution engine.  A maximum of 200 bytes of merged metadata (transmission level + recipient level) is available with recipient metadata taking precedence over transmission metadata when there are conflicts.  |
-|substitution_data | JSON object | Key/value pairs associated with a recipient that are provided to the substitution engine |no | Recipient substitution data takes precedence over transmission substitution data.  Unlike metadata, substitution data is not included in Webhook events.|
+|metadata | JSON object| Key/value pairs associated with a recipient |no | Metadata is available during events through the Webhooks, is written to the jlog files based on the [event_hydrant](https://support.messagesystems.com/docs/web-momo4/modules.event_hydrant.php) module, and is provided to the substitution engine.  A maximum of 200 bytes of merged metadata (transmission level + recipient level) is available with recipient metadata taking precedence over transmission metadata when there are conflicts. Metadata can be excluded from Click events by setting an option in the [engagement_tracker](https://support.messagesystems.com/docs/web-momo4/modules.engage_tracker.php) module. ||substitution_data | JSON object | Key/value pairs associated with a recipient that are provided to the substitution engine |no | Recipient substitution data takes precedence over transmission substitution data.  Unlike metadata, substitution data is not included in Webhook events.|
 
 #### Address Attributes
 If the "address" field is a string type, it is interpreted as the email address.  If it is a JSON
@@ -3532,6 +4404,7 @@ returned.
           },
           "recipients": [
               {
+                  "return_path": "return-path-wilmaflin@tstone.com",
                   "address": {
                       "email": "wilmaflin@yahoo.com",
                       "name": "Wilma"
@@ -3550,6 +4423,7 @@ returned.
                   ]
               },
               {
+                  "return_path": "return-path-abc@tstone.com",
                   "address": {
                       "email": "abc@flintstone.com",
                       "name": "ABC"
@@ -3565,6 +4439,7 @@ returned.
                   ]
               },
               {
+                  "return_path": "return-path-def@tstone.com",
                    "address": {
                       "email": "fred.jones@flintstone.com",
                       "name": "Grad Student Office",
@@ -3684,6 +4559,7 @@ retrieve the recipients contained in a list, the list must be specified and the 
                             "email": "wilmaflin@yahoo.com",
                             "name": "Wilma"
                         },
+                        "return_path": "return-path-wilmaflin@tstone.com",
                         "tags": [
                             "greeting",
                             "prehistoric",
@@ -3702,6 +4578,7 @@ retrieve the recipients contained in a list, the list must be specified and the 
                             "email": "abc@flintstone.com",
                             "name": "ABC"
                         },
+                        "return_path": "return-path-abc@tstone.com",
                         "tags": [
                             "driver",
                             "computer science",
@@ -3783,28 +4660,26 @@ results.  To retrieve recipient details, use the RETRIEVE API for a specified re
 ### Update a Recipient List [PUT]
 
 Update an existing recipient list by specifying its ID in the URI path and use a
-**recipient list object** as the PUT request body.
-
-Use the **num_rcpt_errors** parameter to limit the number of recipient errors
+**recipient list object** as the PUT request body. Use the **num_rcpt_errors** parameter to limit the number of recipient errors
 returned.
 
-**Note**
+The following are key points about updating your recipient lists:
 
-The "id" field is read only and cannot be changed.  If the recipient list "id" is provided in
+* If a non-scheduled transmission contains a recipient list, the recipient list cannot
+be updated if the transmission is submitted or generating.
+* If a scheduled transmission contains a recipient list, the recipient list cannot be updated if the transmission is
+generating or submitted and within 10 minutes of the scheduled generation time.  
+* The "id" field is read only and cannot be changed.  If the recipient list "id" is provided in
 the **recipient list object**, it must match the id parameter.
-
-If a "recipients" array is provided in the update request, it must contain the complete recipient
+* If a "recipients" array is provided in the update request, it must contain the complete recipient
 list and all relevant recipient fields whether they are being changed or not.  The new recipients
 will completely replace the existing recipients.  The number of accepted recipients and the
 number of rejected recipients will only be returned if a "recipients" array is provided in the request.
-
-If a "name" field is provided in the update request, it will replace the existing
+* If a "name" field is provided in the update request, it will replace the existing
 "name" field for the recipient list.
-
-If a "description" field is provided in the update request, it will replace the existing
+* If a "description" field is provided in the update request, it will replace the existing
 "description" field for the recipient list.
-
-If an "attributes" object is provided in the update request, it will completely replace the existing
+* If an "attributes" object is provided in the update request, it will completely replace the existing
 "attributes" object for the recipient list.
 
 + Parameters
@@ -3977,9 +4852,14 @@ If an "attributes" object is provided in the update request, it will completely 
 
 ### Delete a Recipient List [DELETE]
 
-Permanently delete the specified recipient list.  **Note** that once a recipient list is deleted, it
+Permanently delete the specified recipient list.
+
+Once a recipient list is deleted, it
 cannot be recovered.  Before deleting a list, ensure that it is no longer needed and keep a backup copy.  If a deleted
 list is needed again, the list must be resubmitted with the CREATE API.
+
+If a transmission contains a recipient list, the recipient list cannot be deleted if the transmission is
+submitted or generating.  
 
 + Parameters
     + id (required, string, `unique_id_4_graduate_students_list`) ... Identifier of the recipient list
@@ -4042,230 +4922,6 @@ list is needed again, the list must be resubmitted with the CREATE API.
             ]
           }
         ```
-
-# Group Sending Domains
-
-A sending domain is a domain that is used to indicate who an email is from via the "From:" header. Using a custom sending domain enables you to control what recipients see as the From value in their email clients. DNS records can be configured for a sending domain, which allows recipient mail servers to authenticate your messages. The Sending Domain's API provides the means to create, list, retrieve, update, and verify a custom sending domain.
-
-## Sending Domain Attributes
-
-| Field         | Type     | Description                           | Required   | Notes   |
-|------------------------|:-:       |---------------------------------------|-------------|--------|
-|domain    |string  |Name of the sending domain   | yes |The domain name will be used as the "From:" header address in the email.|
-|status | JSON object| JSON object containing status details, including whether this domain's ownership has been verified  | no | Read only. For a full description, see the Status Attributes.|
-|dkim | JSON object| JSON object in which DKIM key configuration is defined|no| For a full description, see the DKIM Attributes.|
-
-### DKIM Attributes
-
-DKIM uses a pair of public and private keys to authenticate your emails. The DKIM key configuration is described in a JSON object with the following fields:
-
-| Field         | Type     | Description                           | Required   | Notes   |
-|------------------------|:-:       |---------------------------------------|-------------|--------|
-|private | string | DKIM private key | yes | The private key will be used to create the DKIM Signature.|
-|public | string |DKIM public key  | yes | The public key will be retrieved from DNS of the sending domain.|
-|selector | string |DomainKey selector | yes | The DomainKey selector will be used to indicate the DKIM public key location.|
-|headers | string| Header fields to be included in the DKIM signature |no | Header fields are separated by a colon.  Example: `"from:to:subject:date"`|
-
-### Status Attributes
-
-Detailed status for this sending domain is described in a JSON object with the following fields:
-
-| Field         | Type     | Description                           | Default   | Notes   |
-|------------------------|:-:       |---------------------------------------|-------------|--------|
-|ownership_verified | boolean | Whether domain ownership has been verified |false |Read only. This field will return "true" if any of dkim_status, spf_status, abuse_at_status, or postmaster_at_status are "true".|
-|dkim_status | string | Verification status of DKIM configuration |unverified|Read only. Valid values are "unverified", "pending", "invalid" or "valid".|
-|spf_status | string | Verification status of SPF configuration |unverified |Read only. Valid values are "unverified", "pending", "invalid" or "valid".|
-|abuse_at_status | string | Verification status of abuse@ mailbox |unverified |Read only. Valid values are "unverified", "pending", "invalid" or "valid".|
-|postmaster_at_status | string | Verification status of postmaster@ mailbox |unverified |Read only. Valid values are "unverified", "pending", "invalid" or "valid".|
-|compliance_status | string | Compliance status | | Valid values are "pending", "valid", or "blocked".|
-
-### Verify Attributes
-
-These are the valid request options for verifying a Sending Domain:
-
-| Field         | Type     | Description                           | Required  |
-|------------------------|:-:       |---------------------------------------|-------------|
-|dkim_verify | boolean | Request verification of DKIM record | no |
-|spf_verify | boolean | Request verification of SPF record | no |
-
-### DNS Attributes
-
-| Field         | Type     | Description                           |
-|------------------------|:-:       |---------------------------------------|
-|dkim_record | string | DNS DKIM record for the registered Sending Domain |
-|spf_record | string | DNS SPF record for the registered Sending Domain |
-|dkim_error | string | Error message describing reason for DKIM verification failure |
-|spf_error | string | Error message describing reason for SPF verification failure |
-
-## Create and List [/sending-domains]
-
-### Create a Sending Domain [POST]
-
-Create a sending domain by providing a **sending domain object** as the POST request body.
-
-+ Request (application/json)
-
-    + Headers
-
-            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
-
-    + Body
-
-        ```
-        {
-            "domain" : "example1.com",
-            "dkim" : {  "private" : "MIICXgIBAAKBgQC+W6scd3XWwvC/hPRksfDYFi3ztgyS9OSqnnjtNQeDdTSD1DRx/xFar2wjmzxp2+SnJ5pspaF77VZveN3P/HVmXZVghr3asoV9WBx/uW1nDIUxU35L4juXiTwsMAbgMyh3NqIKTNKyMDy4P8vpEhtH1iv/BrwMdBjHDVCycB8WnwIDAQABAoGBAITb3BCRPBi5lGhHdn+1RgC7cjUQEbSb4eFHm+ULRwQ0UIPWHwiVWtptZ09usHq989fKp1g/PfcNzm8c78uTS6gCxfECweFCRK6EdO6cCCr1cfWvmBdSjzYhODUdQeyWZi2ozqd0FhGWoV4VHseh4iLj36DzleTLtOZj3FhAo1WJAkEA68T+KkGeDyWwvttYtuSiQCCTrXYAWTQnkIUxduCp7Ap6tVeIDn3TaXTj74UbEgaNgLhjG4bX//fdeDW6PaK9YwJBAM6xJmwHLPMgwNVjiz3u/6fhY3kaZTWcxtMkXCjh1QE82KzDwqyrCg7EFjTtFysSHCAZxXZMcivGl4TZLHnydJUCQQCx16+M+mAatuiCnvxlQUMuMiSTNK6Amzm45u9v53nlZeY3weYMYFdHdfe1pebMiwrT7MI9clKebz6svYJVmdtXAkApDAc8VuR3WB7TgdRKNWdyGJGfoD1PO1ZE4iinOcoKV+IT1UCY99Kkgg6C7j62n/8T5OpRBvd5eBPpHxP1F9BNAkEA5Nf2VO9lcTetksHdIeKK+F7sio6UZn0Rv7iUo3ALrN1D1cGfWIh2dj3ko1iSreyNVSwGW0ePP27qDmU+u6/Y1g==",
-                "public" : "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC+W6scd3XWwvC/hPRksfDYFi3ztgyS9OSqnnjtNQeDdTSD1DRx/xFar2wjmzxp2+SnJ5pspaF77VZveN3P/HVmXZVghr3asoV9WBx/uW1nDIUxU35L4juXiTwsMAbgMyh3NqIKTNKyMDy4P8vpEhtH1iv/BrwMdBjHDVCycB8WnwIDAQAB",
-                "selector" : "brisbane",
-                "headers" : "from:to:subject:date"
-            }
-        }
-        ```
-
-+ Response 200 (application/json; charset=utf-8)
-
-        {
-            "results" : {
-                "message" : "Successfully Created domain.",
-                "domain"  : "example1.com"
-
-            }
-        }
-
-### List all Sending Domains [GET]
-
-List an overview of all sending domains in the system.
-
-+ Request
-
-    + Headers
-
-            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
-            Accept: application/json
-
-+ Response 200 (application/json; charset=utf-8)
-
-        {
-            "results" : [
-                {
-                    "domain": "example1.com"
-                },
-                {
-                    "domain": "example2.com"
-                }
-            ]
-        }
-
-## Retrieve [/sending-domains/{domain_name}]
-
-### Retrieve a Sending Domain [GET]
-
-Retrieve a sending domain by specifying its domain name in the URI path.  The response includes details about its DKIM key configuration.
-
-+ Parameters
-  + domain_name (required, string, `example1.com`) ... Name of the domain
-
-+ Request
-
-    + Headers
-
-            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
-            Accept: application/json
-
-+ Response 200 (application/json; charset=utf-8)
-
-        {
-            "results": {
-                "status": {
-                    "ownership_verified": false,
-                    "spf_status": "pending",
-                    "abuse_at_status": "pending",
-                    "dkim_status": "pending",
-                    "compliance_status": "pending",
-                    "postmaster_at_status": "pending"
-                },
-                "dkim": {
-                    "headers": "from:to:subject:date",
-                    "public": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC+W6scd3XWwvC/hPRksfDYFi3ztgyS9OSqnnjtNQeDdTSD1DRx/xFar2wjmzxp2+SnJ5pspaF77VZveN3P/HVmXZVghr3asoV9WBx/uW1nDIUxU35L4juXiTwsMAbgMyh3NqIKTNKyMDy4P8vpEhtH1iv/BrwMdBjHDVCycB8WnwIDAQAB",
-                    "selector": "hello_selector"
-                }
-            }
-        }
-
-## Update [/sending-domains/{domain}]
-
-### Update a Sending Domain [PUT]
-
-Update the attributes of an existing sending domain by specifying its domain name in the URI path and use a **sending domain object** as the PUT request body.
-
-If a dkim object is provided in the update request, it must contain all relevant fields whether they are being changed or not.  The new dkim object will completely overwrite the existing one.
-
-+ Parameters
-    + domain (required, string, `example1.com`) ... Name of the domain
-
-+ Request (application/json)
-
-    + Headers
-
-            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
-
-    + Body
-
-        ```
-        {
-            "dkim" : {  "private" : "MIICXgIBAAKBgQC+W6scd3XWwvC/hPRksfDYFi3ztgyS9OSqnnjtNQeDdTSD1DRx/xFar2wjmzxp2+SnJ5pspaF77VZveN3P/HVmXZVghr3asoV9WBx/uW1nDIUxU35L4juXiTwsMAbgMyh3NqIKTNKyMDy4P8vpEhtH1iv/BrwMdBjHDVCycB8WnwIDAQABAoGBAITb3BCRPBi5lGhHdn+1RgC7cjUQEbSb4eFHm+ULRwQ0UIPWHwiVWtptZ09usHq989fKp1g/PfcNzm8c78uTS6gCxfECweFCRK6EdO6cCCr1cfWvmBdSjzYhODUdQeyWZi2ozqd0FhGWoV4VHseh4iLj36DzleTLtOZj3FhAo1WJAkEA68T+KkGeDyWwvttYtuSiQCCTrXYAWTQnkIUxduCp7Ap6tVeIDn3TaXTj74UbEgaNgLhjG4bX//fdeDW6PaK9YwJBAM6xJmwHLPMgwNVjiz3u/6fhY3kaZTWcxtMkXCjh1QE82KzDwqyrCg7EFjTtFysSHCAZxXZMcivGl4TZLHnydJUCQQCx16+M+mAatuiCnvxlQUMuMiSTNK6Amzm45u9v53nlZeY3weYMYFdHdfe1pebMiwrT7MI9clKebz6svYJVmdtXAkApDAc8VuR3WB7TgdRKNWdyGJGfoD1PO1ZE4iinOcoKV+IT1UCY99Kkgg6C7j62n/8T5OpRBvd5eBPpHxP1F9BNAkEA5Nf2VO9lcTetksHdIeKK+F7sio6UZn0Rv7iUo3ALrN1D1cGfWIh/Y1g==",
-                "public" : "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC+W6scd3XWwvC/hPRksfDYFi3ztgyS9OSqnnjtNQeDdTSD1DRx/xFar2wjmzxp2+SnJ5pspaF77VZveN3P/HVmXZVghr3asoV9WBx/uW1nDIUxU35L4juXiTwsMAbgMyh3NqIKTNKyMDy4P8vpEhtH1iv/BrwMdBjHDVCycB8WnwIDAQAB",
-                "selector" : "hello_selector",
-                "headers" : "from:to:subject:date"
-            }
-        }
-        ```
-
-+ Response 200 (application/json; charset=utf-8)
-
-        {
-            "results" : {
-                "message" : "Successfully Updated Domain.",
-                "domain" : "example1.com"
-            }
-        }
-
-## Verify [/sending-domains/{domain_name}/verify]
-
-### Verify a Sending Domain [POST]
-The verify resource validates the specified verification field types. Including the fields "dkim_verify" and "spf_verify" in the request initiates a check against the associated DNS record type for the specified sending domain. The domain's "status" object is returned on success.
-
-+ Request (application/json)
-
-    + Headers
-
-            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
-    + Body
-
-        ```
-        {
-            "dkim_verify" : true,
-            "spf_verify"  : true
-        }
-        ```
-
-
-+ Response 200 (application/json; charset=utf-8)
-
-        {
-            "results": {
-                "ownership_verified": true,
-                "spf_status": "valid",
-                "dns": {
-                    "dkim_record": "k=rsa; h=sha256; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC+W6scd3XWwvC/hPRksfDYFi3ztgyS9OSqnnjtNQeDdTSD1DRx/xFar2wjmzxp2+SnJ5pspaF77VZveN3P/HVmXZVghr3asoV9WBx/uW1nDIUxU35L4juXiTwsMAbgMyh3NqIKTNKyMDy4P8vpEhtH1iv/BrwMdBjHDVCycB8WnwIDAQAB",
-                    "spf_record": "v=spf1 include:sparkpostmail.com ~all"
-                },
-                "compliance_status": "pending",
-                "dkim_status": "valid",
-                "abuse_at_status": "unverified",
-                "postmaster_at_status": "unverified"
-            }
-        }
 
 # Group Templates
 
@@ -4728,6 +5384,7 @@ See the Substitutions Reference section for more information.
 Delete a template by specifying its ID in the URI path.
 If the template delete API call succeeds, then ALL versions of the template will be deleted from the system (both published AND draft versions).
 
+If a transmission uses a stored template, the template cannot be deleted if the transmission is submitted or generating.
 
 + Parameters
     + id (required, string, `11714265276872`) ... ID of the template
@@ -4786,13 +5443,14 @@ In addition, engagement tracking options can be set in the transmission to track
 | Field         | Type     | Description                           | Required         | Notes   |
 |--------------------|----------------      |---------------------------------------|--------------------------|--------|
 |id |string |ID of the transmission |no |Read only.  A unique ID is generated for each transmission on submission. |
-|state |string  |State of the transmission  | no | Read only.  Valid responses are "submitted", "generating" or "success". |
+|state |string  |State of the transmission  | no | Read only.  Valid responses are "submitted", "Generating", "Success", or "Canceled". |
 |options | JSON object | JSON object in which transmission options are defined | no | For a full description, see the Options Attributes.
 |recipients | JSON array or JSON object | Inline recipient objects or object containing stored recipient list ID |yes | Specify a stored recipient list or specify recipients inline.  When using a stored recipient list, specify the "list_id" as described in Using a Stored Recipient List.  Otherwise, provide the recipients inline using the fields described in the Recipient List API documentation for Recipient Attributes. |
 |campaign_id | string |Name of the campaign|no|Maximum length - 64 bytes| 
 |description | string |Description of the transmission|no | Maximum length - 1024 bytes| 
-|metadata|JSON object|Transmission level metadata containing key/value pairs |no| Metadata is available during events through the Webhooks and is provided to the substitution engine.  A maximum of 200 bytes of merged metadata (transmission level + recipient level) is available with recipient metadata taking precedence over transmission metadata when there are conflicts.  |
+|metadata|JSON object|Transmission level metadata containing key/value pairs |no| Metadata is available during events through the Webhooks, is written to the jlog files based on the [event_hydrant](https://support.messagesystems.com/docs/web-momo4/modules.event_hydrant.php) module, and is provided to the substitution engine.  A maximum of 200 bytes of merged metadata (transmission level + recipient level) is available with recipient metadata taking precedence over transmission metadata when there are conflicts. Metadata can be excluded from Click events by setting an option in the [engagement_tracker](https://support.messagesystems.com/docs/web-momo4/modules.engage_tracker.php) module. |
 |substitution_data|JSON object|Key/value pairs that are provided to the substitution engine| no | Recipient substitution data takes precedence over transmission substitution data. Unlike metadata, substitution data is not included in Webhook events. |
+|return_path | string |Email to use for envelope FROM | yes | To support [VERP] (https://support.messagesystems.com/docs/web-momo4/glossary.php#gloss.verp), this field can also optionally be specified inside of the address object of a specific recipient in order to give the recipient a unique envelope MAIL FROM.|
 |content| JSON object | Content that will be used to construct a message | yes | Specify a stored template or specify inline template content. When using a stored template, specify the "template_id" as described in Using a Stored Template.  Otherwise, provide the inline content using the fields described in the Templates API documentation for Content Attributes.  Maximum size - 15MBs|
 |total_recipients | number | Computed total recipients | no | Read only|
 |num_generated | number | Computed total number of messages generated | no |Read only|
@@ -4803,11 +5461,9 @@ In addition, engagement tracking options can be set in the transmission to track
 ### Options Attributes
 | Field         | Type     | Description                           | Required   | Notes   |
 |------------------------|:-:       |---------------------------------------|-------------|--------|
-|open_tracking|boolean| Whether open tracking is enabled for this transmission| no |If not specified, the setting at template level is used, or defaults to true. | 
-|click_tracking|boolean| Whether click tracking is enabled for this transmission| no |If not specified, the setting at template level is used, or defaults to true. | 
-|transactional|boolean|Whether message is transactional or non-transactional for unsubscribe and suppression purposes | no |If not specified, the setting at template level is used, or defaults to false. |
-|sandbox|boolean|Whether or not to use the sandbox sending domain | no |Defaults to false.|
-
+|start_time | string | Delay generation of messages until this datetime.  For additional information, see Scheduled Transmissions. |no - defaults to immediate generation | Format YYYY-MM-DDTHH:MM:SS+-HH:MM or "now". Example: '2015-02-11T08:00:00-04:00'.|
+|open_tracking|boolean| Whether open tracking is enabled for this transmission| no |If not specified, the setting at template level or [msg_gen](https://support.messagesystems.com/docs/web-momo4/modules.msg_gen.php) module level is used in that order. | 
+|click_tracking|boolean| Whether click tracking is enabled for this transmission| no |If not specified, the setting at template level or [msg_gen](https://support.messagesystems.com/docs/web
 
 ### Using a Stored Template
 
@@ -4826,13 +5482,20 @@ The following recipients attribute is used when specifying a stored recipient li
 |------------------------|:-:       |---------------------------------------|-------------|--------|
 |list_id | string  | Identifier of the stored recipient list to use | yes | Specify this field when using a stored recipient list. |
 
+## Scheduled Transmissions
+Use the _options.start_time_ attribute to delay generation of messages.  The scheduled time must be in the future and by default cannot be greater than 1 year from the time of submission.  If the scheduled time does not fall in that range, the transmission is not accepted.
 
+Set the start_time_max_schedule_interval option in the [msg_gen](https://support.messagesystems.com/docs/web-momo4/modules.msg_gen.php) module to configure how far in the future the message generation may be delayed.
+
+## Transactional Transmissions
+A transactional transmission has only one recipient. Set the gen_transactional_threads option in the
+[msg_gen](https://support.messagesystems.com/docs/web-momo4/modules.msg_gen.php) module to ensure that transactional transmissions are handled efficiently by minimizing database access wherever possible. 
 
 ## Create [/transmissions{?num_rcpt_errors}]
  
 ### Create a Transmission [POST]
 
-You can create a transmission in a number of ways.
+You can create a transmission in a number of ways. In all cases, you can use the **num_rcpt_errors** parameter to limit the number of recipient errors returned.
 
 #### Using Inline Email Part Content
 
@@ -4850,10 +5513,14 @@ Create a transmission using a stored recipients list by specifying the "list_id"
 
 Create a transmission using a stored template by specifying the "template_id" in the "content" attribute.  The "use_draft_template" field is optional and indicates whether to use a draft version or the published version of the template when generating messages.
 
+#### Scheduling Transmissions
 
-Note: In all cases, you can use the **num_rcpt_errors** parameter to limit the number of recipient errors returned.
+Create a scheduled transmission to be generated and sent at a future time by specifying "start_time" in the "options" attribute.
 
-When a transmission is created, the number of messages in the transmission is compared to the sending limit of your account. If the transmission will cause you to exceed your sending limit, the entire transmission results in an error and no messages are sent.  Note that no messages will be sent for the given transmission, regardless of the number of messages that caused you to exceed your sending limit. In this case, the Transmission API will return an HTTP 420 error code with an error detailing whether you would exceed your hourly, daily, or sandbox sending limit. 
+Scheduling a transmission that specifies a stored template will use the LATEST version of the template available at the time of scheduled generation.  The use of published versus draft versions follows the same logic in all transmission requests, whether scheduled or immediate generation. When "use_draft_template" is not specified (or set to false), the latest published version of the specified stored template is used. If "use_draft_template" is set to true, the latest draft version is used in the transmission instead.
+
+Once message generation has been initiated, all messages in the transmission will use the template selected at the start of the generation. If a template update is made during the generation of a transmission that uses that template, the template update will succeed but the transmission will continue to use the version that was selected at the start of the generation.
+
 
 + Parameters
   + num_rcpt_errors (optional, number, `3`) ... Maximum number of recipient errors that this call can return, otherwise all validation errors are returned.
@@ -4875,6 +5542,7 @@ When a transmission is created, the number of messages in the transmission is co
           },
 
           "campaign_id": "christmas_campaign",
+          "return_path": "bounces-christmas-campaign@flintstone.com",
 
           "metadata": {
             "user_type": "students"
@@ -4886,6 +5554,7 @@ When a transmission is created, the number of messages in the transmission is co
 
           "recipients": [
             {
+              "return_path": "123@bounces.flintstone.com",
               "address": {
                 "email": "wilma@flintstone.com",
                 "name": "Wilma Flintstone"
@@ -4938,22 +5607,6 @@ When a transmission is created, the number of messages in the transmission is co
         }
         ```
 
-+ Response 403 (application/json)
-
-    + Body
-
-        ```
-        {
-          "errors" : [
-            {
-              "description" : "Unconfigured or unverified sending domain.",
-              "code" : "1100",
-              "message" : "permission denied"
-            }
-          ]
-        }
-        ```
-
 + Request Create Transmission with Inline RFC822 Content (application/json)
 
   + Headers
@@ -4968,6 +5621,7 @@ When a transmission is created, the number of messages in the transmission is co
                 "click_tracking": true
               },
               "campaign_id": "christmas_campaign",
+              "return_path": "bounces-christmas-campaign@flintstone.com",
               "metadata": {
                 "user_type": "students"
               },
@@ -4976,6 +5630,7 @@ When a transmission is created, the number of messages in the transmission is co
               },
               "recipients": [
                 {
+                  "return_path": "123@bounces.flintstone.com",
                   "address": {
                     "email": "wilma@flintstone.com",
                     "name": "Wilma Flintstone"
@@ -5029,21 +5684,6 @@ When a transmission is created, the number of messages in the transmission is co
               }
             }
 
-+ Response 403 (application/json)
-
-  + Body
-
-            {
-              "errors" : [
-                {
-                  "description" : "Unconfigured or unverified sending domain.",
-                  "code" : "1100",
-                  "message" : "permission denied"
-                }
-              ]
-            }
-
-
 + Request Create Transmission with Stored Recipient List (application/json)
 
   + Headers
@@ -5054,6 +5694,7 @@ When a transmission is created, the number of messages in the transmission is co
   
             {
                 "campaign_id": "christmas_campaign",
+                "return_path": "bounces-christmas-campaign@flintstone.com",
 
                 "recipients": {
                   "list_id": "christmas_sales_2013"
@@ -5119,6 +5760,8 @@ When a transmission is created, the number of messages in the transmission is co
                 "use_draft_template": false
               },
 
+              "return_path": "bounces-christmas-campaign@flintstone.com",
+
               "metadata": {
                 "user_type": "students"
               },
@@ -5128,6 +5771,7 @@ When a transmission is created, the number of messages in the transmission is co
 
               "recipients": [
                 {
+                  "return_path": "123@bounces.flintstone.com",
                   "address": {
                     "email": "wilma@flintstone.com",
                     "name": "Wilma Flintstone"
@@ -5146,6 +5790,7 @@ When a transmission is created, the number of messages in the transmission is co
                   }
                 },
                 {
+                  "return_path": "456@bounces.flintstone.com",
                   "address": {
                     "email": "abc@flintstone.com"
                   },
@@ -5201,7 +5846,7 @@ When a transmission is created, the number of messages in the transmission is co
               ]
             }
 
-+ Request Number of Messages Exceeds Sending Limit (application/json)
++ Request Create Scheduled Transmission (application/json)
 
   + Headers
 
@@ -5210,63 +5855,37 @@ When a transmission is created, the number of messages in the transmission is co
   + Body
   
             {
-                "campaign_id": "christmas_campaign",
+                "name" : "Fall Sale",
+                "campaign_id": "fall",
+                "return_path": "deals@company.com",
+
+                "options": {
+                  "start_time" : "2015-10-11T08:00:00-04:00",
+                  "open_tracking": true,
+                  "click_tracking": true
+                },
 
                 "recipients": {
-                  "list_id": "list_exceeds_sending_limit"
+                  "list_id": "all_subscribers"
                 },
 
                 "content": {
-                  "from": {
-                    "name": "Fred Flintstone",
-                    "email": "fred@flintstone.com"
-                  },
-
-                  "subject": "Big Christmas savings!",
-
-                  "text": "Hi {{name}} \nSave big this Christmas in your area {{place}}! \nClick http://www.mysite.com and get huge discount\n Hurry, this offer is only to {{user_type}}\n {{sender}}",
-                  "html": "<p>Hi {{name}} \nSave big this Christmas in your area {{place}}! \nClick http://www.mysite.com and get huge discount\n</p><p>Hurry, this offer is only to {{user_type}}\n</p><p>{{sender}}</p>"
+                  "template_id" : "fall_deals"
                 }
             }
 
-+ Response 420 (application/json)
++ Response 200 (application/json)
 
   + Body
-  
+
             {
-              "errors": [
-                {
-                  "message": "Exceed Sending Limit (hourly)",
-                  "code": "2101"
-                }
-              ]
+              "results": {
+                "total_rejected_recipients": 1000,
+                "total_accepted_recipients": 0,
+                "id": "11668787484950529"
+              }
             }
 
-+ Response 420 (application/json)
-
-  + Body
-  
-            {
-              "errors": [
-                {
-                  "message": "Exceed Sending Limit (daily)",
-                  "code": "2102"
-                }
-              ]
-            }
-
-+ Response 420 (application/json)
-
-  + Body
-  
-            {
-              "errors": [
-                {
-                  "message": "Exceed Sending Limit (sandbox)",
-                  "code": "2103"
-                }
-              ]
-            }
 
 ## Retrieve [/transmissions/{id}]
 
@@ -5302,6 +5921,7 @@ The response for a transmission using an inline template will include "template_
                 "template_id": "Bob's template",
                 "use_draft_template": false
               },
+              "return_path": "fred@flintstone.com",
               "rcpt_list_chunk_size": 100,
               "rcpt_list_total_chunks": 1,
               "num_rcpts": 10,
@@ -5342,12 +5962,12 @@ The response for a transmission using an inline template will include "template_
 ### List all Transmissions [GET]
 List an array of transmission summary objects.  A transmission summary object contains the "template_id", "id", "campaign_id", "description", and "state".  The following lists are supported:
 
-* All multi-recipient transmissions
-* Multi-recipient transmissions using a specific template
-* Multi-recipient transmissions for a campaign
-* Multi-recipient transmissions for a campaign that use a specific template
+* All transmissions
+* Transmissions using a specific template
+* Transmissions for a campaign
+* Transmissions for a campaign that use a specific template
 
-Note that single recipient transmissions are not returned.
+If the gen_transactional_threads option in the [msg_gen](https://support.messagesystems.com/docs/web-momo4/modules.msg_gen.php) module is set to skip the database for transactional transmissions, this endpoint will not return single recipient transmissions.
 
 By default, the list includes all transmissions for all campaigns.  Use the **template_id** parameter to specify a template and the **campaign_id** parameter to specify a campaign.
 
@@ -5404,10 +6024,90 @@ The example response shows a query on _campaign_id=thanksgiving_, with **templat
         }
         ```
 
+## Delete [/transmissions/{id}]
+
+### Delete a Transmission [DELETE]
+
+Delete a transmission by specifying its ID in the URI path.
+
+Only transmissions which are scheduled for future generation may be deleted.
+
+Scheduled transmissions cannot be deleted if the transmission is within 10 minutes of the scheduled generation time.
+
+
++ Parameters
+    + id (required, string, `11714265276872`) ... ID of the transmission 
+
++ Request
+
+    + Headers
+
+            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+            Accept: application/json
+
++ Response 200 (application/json)
+
+    +  Body
+
+        {
+        }
+
++ Response 404 (application/json)
+
+  + Body
+          {
+            "errors": [
+              {
+                "message": "resource not found",
+                "code": "1600",
+                "description": "Resource not found:transmission id 999999999"
+              }
+            ]
+          }
+
++ Response 409 (application/json)
+
+  + Body
+          {
+            "errors": [
+              {
+                "message": "too close to generation time to delete transmission",
+                "code": "2003",
+                "description": "Deletion time window (660 seconds) doesn't permit transmission deletion"
+              }
+            ]
+          }
+
++ Response 409 (application/json)
+
+  + Body
+          {
+            "errors": [
+              {
+                "message": "transmission database record is in an invalid state for deletion",
+                "code": "2006",
+                "description": "Unable to delete a transmission that is in progress (state=Generating)"
+              }
+            ]
+          }
+
++ Response 409 (application/json)
+
+  + Body
+          {
+            "errors": [
+              {
+                "message": "transmission database record is in an invalid state for deletion",
+                "code": "2006",
+                "description": "Unable to delete a transmission that has completed (state=Success)"
+              }
+            ]
+          }
+
 # Group Webhooks
 
 The Webhooks API provides the means to create, review, update, and delete webhooks, which enables you to
-receive push updates of the raw events generated by SparkPost.
+receive push updates of the raw events generated by Momentum.
 
 The following are key operational details: 
 * Any webhook batch that does not receive an HTTP 200 response will be retried for a total of 4 hours before the data is discarded.
@@ -5851,9 +6551,8 @@ are currently in a failed state.
 
 # Group SMTP API
 
-Through use of the X-MSYS-API header in a message sent to SparkPost through SMTP 
-(see ["Sending an Email"](https://www.sparkpost.com/docs/sending-email)), you can now specify a campaign id, metadata,
-tags, and enable open and/or click tracking.  Note that to use this option you should be familiar with how to encode
+Through use of the X-MSYS-API header in a message sent to Momentum through SMTP, you can now specify a campaign id, metadata,
+tags, Cc, Bcc, and archive recipient lists and enable open and/or click tracking.  Note that to use this option you should be familiar with how to encode
 options as JSON strings, as the value of the header field is a JSON object that specifies the relevant options:
 
 ```
@@ -5864,20 +6563,79 @@ X-MSYS-API: {"options" : {"open_tracking" : false, "click_tracking" : true},
 
 The fields supported in the X-MSYS-API header are as follows:
 
-| field | type | description | required | notes |
+| Field | Type | Description | Required | Notes |
 |-------|------|-------------|----------|-------|
 | campaign_id | string | Name of the campaign to associate with the SMTP message | no | Maximum length - 64 bytes (same restriction as the REST API) |
 | metadata | JSON object | JSON key value pairs associated with the SMTP message | no | A maximum of 200 bytes of metadata is available during click/open events. |
+| cc | JSON array | Array of recipient addresses that will be included in the "Cc" header | no | A unique message with a unique tracking URL will be generated for each recipient in this list. |
+| bcc | JSON array | Array of recipient addresses that will be hidden from all other recipients | no | A unique message with a unique tracking URL will be generated for each recipient in this list. |
+| archive | JSON array | Array of recipient addresses that will be hidden from all other recipients | no | A unique message will be generated for each recipient in this list. The archive copy of the message contains tracking URLs identical to the recipient. For a full description, see the "What is an archive recipient?" section.|
 | tags | JSON array | Array of text labels associated with the SMTP message | no | Tags are available in click/open events. Maximum number of tags is 10 per recipient, 100 system wide. |
 | options | JSON object | JSON object in which SMTP API options are defined | no | For a full description, see the Options Attributes. |
 
 ## Options Attributes
 
-| field | type | description | required | notes |
+| Field | Type | Description | Required | Notes |
 |-------|------|-------------|----------|-------|
 | open_tracking | boolean | Whether open tracking is enabled for this SMTP message | no | Defaults to false. |
 | click_tracking | boolean | Whether click tracking is enabled for this SMTP message | no | Defaults to false. |
-| sandbox|boolean|Whether or not to use the sandbox sending domain | no |Defaults to false.|
+
+## Sending Messages with cc, bcc, and archive Recipients
+
+When submitting an email via SMTP that includes the X-MSYS-API header, you may specify a JSON array for cc, bcc, and archive lists.  For each address in each of these arrays, a message will be generated. Messages will be generated with the following headers: 
+* It is the responsibility of the user to include their own "To" header in the body of the message.
+* All messages will display the "Cc" header and the value of that header will include all addresses listed in the "cc" array.
+* The "bcc" recipients will each receive a message with the "To" and "Cc" headers described above and, additionally, will see a "Bcc" header with ONLY their own recipient address as the value of the header.
+* The "archive" recipients will each receive a message with the "To" and "Cc" headers described above however, they will not have a "Bcc" header.
+
+The following are key points about reporting and tracking for cc, bcc, and archive messages:
+* Each recipient (To, Cc, Bcc, and archive) is counted as a targeted message.
+* A "rcpt_type" field is available during events through the Webhooks, which designates if the message was a Cc, Bcc, or archive copy.
+* A "transmission_id" field is available during events through the Webhooks, which can be used to correlate the Cc, Bcc, and archive versions of the messages to one another.
+
+**What is an archive recipient?**
+
+Recipients in the "archive" list will receive an exact replica of the message that was sent to the RCPT TO address. In particular, any encoded links intended for the RCPT TO recipient will appear _as is_ in the archive messages.  In contrast, recipients in the "bcc" list will have links encoded specific to their address. (There will be some differences in headers such as X-MSFBL or List-Unsubscribe headers.)
+
+For example:
+
+```
+X-MSYS-API: {
+
+   "cc" : [ "cc_email1@corp.com", "cc_email2@corp.com" ], 
+   "bcc" : [ "bcc_email1@corp.com", "bcc_email2@corp.com" ], 
+   "archive" : [ "archive_email@corp.com" ], 
+
+   "options" : {"open_tracking" : false, "click_tracking" : true},
+}
+```
+You may not specify more than a total of 1000 total recipients in those 3 lists.
+
+You may also specify name and email keys in the "cc" and "bcc" JSON arrays in order to produce a friendly "Cc" or "Bcc" header. For example:
+
+```
+X-MSYS-API: {
+   "cc" : [
+    {
+    "email" : "cc_recip_1@gmail.com",
+    "name" : "CC 1"
+    },
+    {
+    "email" : "cc_recip_2@gmail.com",
+    "name" : "CC 2"
+    }
+  ]
+
+  "bcc" : [
+    {
+    "email" : "bcc_recip_1@gmail.com",
+    "name" : "BCC 1"
+    }
+  ]
+}
+```
+
+## Comments on Header Length
 
 SMTP defines a maximum line length of 1000 characters (including CRLF).  If the value of the X-MSYS-API JSON string is
 longer than 998 characters, it will need to be folded across multiple lines before the message is injected.  An example

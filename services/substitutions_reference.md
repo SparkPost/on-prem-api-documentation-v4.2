@@ -66,8 +66,6 @@ Whitespace within the braces is ignored.  All of the following are equivalent:
 {{  value   }}
 ```
 
-**Note**
-
 However, no spaces are allowed when substitution data is used in a query string.
 In the following example, no whitespace is allowed within the braces:
 
@@ -145,8 +143,6 @@ Substitution statements that exist on their own line of the template will **not*
 produce a blank line in the resulting output.  This is a convenience to the
 template writer.  In addition, any whitespace after the closing **}}** and before
 the `LF` or `CRLF` will **not** be present in the output. 
-
-**Note**
 
 These rules do not apply to substitution expressions.
 
@@ -445,8 +441,6 @@ The relational and logical operators are as follows:
 The substitution language uses the `each` keyword for iteration.
 The value at each index of an array can be accessed within the each loop by using the `loop_var` variable. When using the `each` keyword to iterate over an array, the `loop_index` variable can be used to get the current index.
 
-**Note**
-
 These examples continue to use the sample data given above.
 
 For example, use the following syntax to iterate over a JSON array of strings
@@ -482,8 +476,6 @@ The following example uses `shopping_cart` and `a_nested_array`:
   {{end}}
 {{end}}
 ```
-
-**Note** 
 
 The preceding example uses indentation for ease of reading.
 The indentation will appear in the rendered content, so it is not advisable to indent a production template. 
@@ -560,7 +552,7 @@ need to be structured as:
 </body>
 ```
 
-Note: The dynamic content will be correctly inserted *without* html escaping,
+The dynamic content will be correctly inserted *without* html escaping,
 regardless of whether double or triple curly braces are used.  There is no need to use triple curly braces in this case.
 
 
@@ -627,7 +619,8 @@ A full transmission json example follows:
     "html": "<p>Today's special offers</p><ul>\n{{each offers}}\n<li>{{render_dynamic_content(dynamic_html[loop_var])}}</li>\n{{end}}\n</ul>",
     "from": "test@example.com",
     "subject": "offers"
-  }
+  },
+  "return_path": "test@example.com"
 }
 ```
 
@@ -682,21 +675,130 @@ The four macros for outputting braces are listed below followed by their output:
 * `closing_triple_curly()` - }}}
 
 
+### Registering Custom Macros
+
+Custom macros may be written in lua and registered with Momentum using the `slt2.register_macros` function.
+
+To define a custom macro, the lua code for the macro must exist in a lua file that
+is loaded by Momentum's scriptlet module.  Custom macros *cannot* be defined inline in a template.
+
+The following example shows the steps necessary to register a custom macro called `to_upper`:
+
+Create a new lua file (the name of the file does not matter): /opt/msys/ecelerity/etc/conf/default/my_macros.lua
+
+```
+-- load the slt2 templating engine
+local slt2 = require("msys.slt2")
+
+-- load the string module, which our custom macro will make use of
+require("string")
+
+-- create an empty macros table
+local macros = { }
+
+-- define a "to_upper" function as an entry in the macros table
+function macros.to_upper(text)
+  return string.upper(text)
+end
+
+-- register all functions in the macros table
+slt2.register_macros(macros)
+```
+
+Configure ecelerity.conf such that my_macros.lua is loaded in the scriptlet module:
+
+```
+scriptlet "scriptlet" {
+  script "my_macros" {
+    source = "my_macros"
+  }
+}
+```
+
+After a config reload, the to_upper macro will be available to be used in a template:
+
+```
+You live in {{ to_upper(state) }}
+```
+
+Note that slt2.register_macros takes a table of functions as the argument.
+Multiple macros may be registered at once as seen in the example below:
+
+```
+local slt2 = require("msys.slt2")
+require("msys.db")
+
+local macros = { }
+
+function macros.print_name(person)
+  if person == nil then
+    return ""
+  end
+
+  local name = person.firstname
+  if person.lastname then
+    name = name .. " " .. person.lastname
+  end
+
+  return name
+end
+
+function macros.total_cost(items)
+  local total = 0
+  for index, item in items do
+    total = total + item.cost
+  end
+
+  return total
+end
+
+function macros.hair_color(username)
+  local rowset, err = msys.db.query(
+    "example", "SELECT hair_color FROM usernames WHERE username = ?",
+    { username }, { raise_error = true } )
+
+  for row in rowset do
+    return row.hair_color
+  end
+  return "unknown"
+end
+
+-- register all three macros
+slt2.register_macros(macros)
+```
+
+Once registered, the macros can be used in a template as follows:
+
+```
+Hello {{ print_name(person) }}
+Your total is {{ total_cost(items) }}
+Your haircolor is {{ hair_color(person.username) }}
+```
+
+*Note:*
+
+The custom macro will be called when generating a message for each recipient in the transmission.
+The generation jobs run in a threadpool. The custom macro may execute work such as database lookups.
+The developer of a custom macro must be aware that this will increase the latency of the generation process,
+because each database lookup will increase the time taken to complete generation for a particular recipient.
+
+
 
 ###  Reserved Recipient Substitution Variables
 
-The following substitution variables are reserved
-automatically available for each recipient:
+The following substitution variables are reserved and automatically available for each recipient:
 
 * `address.name`: Recipient's name from the _address.name_ recipient json field
 * `email` and `address.email`: Recipient's email address from the _address_ or _address.email_ recipient json field
+* `return_path`: Return path from the transmission or recipients json field
 
 Example:
 
 ```
 Hello {{address.name}}
-Your email is {{address.email}}
+Your email is {{address.email}} and your return path is {{return_path}}
 ```
+
 
 ### Substitutions in email_rfc822 Headers
 
@@ -725,3 +827,9 @@ then that part will be quoted-printable encoded before being placed back into th
 MIME structure.  The Content-Type will be updated appropriately.
 * If after substitution, a header value contains 8-bit data, then the header
 value will be RFC2047 base64 encoded before being written back to the headers structure.
+
+
+### Substitutions in MCMT
+
+See [MCMT](https://support.messagesystems.com/docs/web-momo4/conf.ref.changes.mcmt.php).
+

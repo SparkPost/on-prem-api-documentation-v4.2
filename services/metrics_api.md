@@ -1,6 +1,6 @@
 # Group Metrics
 
-SparkPost logs copious amounts of statistical, real-time data about message processing, message
+Momentum logs copious amounts of statistical, real-time data about message processing, message
 disposition, and campaign performance.  This reporting data is available in the UI or through the Metrics API.  The Metrics API provides a variety of endpoints enabling you to retrieve a summary of the data, data grouped by a specific qualifier, or data by event type.  Within each endpoint, you can also apply various filters to drill down to the data for your specific reporting needs.
 
 ## Metrics API Deliverability Glossary
@@ -9,9 +9,9 @@ Definitions for terms found in Metrics API
 
 | Term     | Definition    |
 |---------:|:--------------|
-|`count_targeted` | Messages successfully injected into SparkPost as well as rejected by it|
-|`count_injected` | Messages injected to or received by SparkPost|
-|`count_sent` | Messages that SparkPost attempted to deliver, which includes both Deliveries and In-Band Bounces|
+|`count_targeted` | Messages successfully injected into Momentum as well as rejected by it|
+|`count_injected` | Messages injected to or received by Momentum|
+|`count_sent` | Messages that Momentum attempted to deliver, which includes both Deliveries and In-Band Bounces|
 |`count_accepted` | Messages an ISP or other remote domain accepted (less Out-of-Band Bounces)|
 |`count_delivered_first` | Messages delivered on the first attempt|
 |`count_delivered_subsequent` | Messages delivered that required more than one delivery attempt|
@@ -27,24 +27,13 @@ Definitions for terms found in Metrics API
 |`count_admin_bounce` | Total number of Bounced messages due to admin bounce classification reasons, also includes Rejected|
 |`count_undetermined_bounce` | Total number of Bounced messages due to undetermined bounce reasons|
 |`count_rejected` | Messages rejected due to policy or that failed to generate|
-|`count_policy_rejection` | Messages rejected by SparkPost due to policy|
+|`count_policy_rejection` | Messages rejected by Momentum due to policy|
 |`count_generation_failed` | Message generation failed for an intended recipient|
-|`count_generation_rejection` | Messages rejected by SparkPost due to policy|
-|`open_rate` | Percentage of Targeted messages that were rendered or had at least one link selected|
-|`click_through_rate` | Percentage of Targeted messages that had at least one link selected|
-|`bounce_rate` | Percentage of Targeted messages that Bounced|
-|`hard_bounce_rate` | Percentage of Targeted messages that Hard Bounced|
-|`soft_bounce_rate` | Percentage of Targeted messages that Soft Bounced|
-|`block_bounce_rate` | Percentage of Targeted messages that Block Bounced|
-|`admin_bounce_rate` | Percentage of Targeted messages that Admin Bounced|
-|`undetermined_bounce_rate` | Percentage of Targeted messages that Undetermined Bounced|
+|`count_generation_rejection` | Messages rejected by Momentum due to policy|
 |`count_inband_bounce` | Messages that bounced on delivery attempt during the SMTP session|
 |`count_outofband_bounce` | Messages that the ISP bounced subsequent to a successful delivery|
 |`count_delayed` | Total number of delays due to any temporary failure|
 |`count_delayed_first` | Messages delayed on the first delivery attempt|
-|`avg_delivery_time_first` | Average delivery time in milliseconds (latency) for messages delivered on the first attempt|
-|`avg_delivery_time_subsequent` | Average delivery time in milliseconds (latency) for messages delivered that required more than one attempt|
-|`avg_msg_size` | Average size of delivered messages, in bytes (including attachments)|
 |`total_msg_volume` | Total size of delivered messages, in bytes (including attachments)|
 |`count_spam_complaint` | Number of spam complaints received from an ISP|
 
@@ -79,6 +68,26 @@ list of URIs that exists within the Metrics API.
                 {
                   "href": "/api/v1/metrics/domains",
                   "rel": "domains",
+                  "method": "GET"
+                },
+                {
+                  "href": "/api/v1/metrics/binding-groups",
+                  "rel": "binding-groups",
+                  "method": "GET"
+                },
+                {
+                  "href": "/api/v1/metrics/bindings",
+                  "rel": "bindings",
+                  "method": "GET"
+                },
+                {
+                  "href": "/api/v1/metrics/nodes",
+                  "rel": "nodes",
+                  "method": "GET"
+                },
+                {
+                  "href": "/api/v1/metrics/protocols",
+                  "rel": "protocols",
                   "method": "GET"
                 }
             ]
@@ -140,7 +149,7 @@ Provides links to all child URIs within the Metrics API.
     [Discoverability Links][]
 
 
-## Deliverability Metrics [/metrics/deliverability{?from,to,domains,campaigns,templates,sandbox,metrics,timezone}]
+## Deliverability Metrics [/metrics/deliverability{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone}]
 
 
 + Model
@@ -344,7 +353,12 @@ aggregate data, which can be used as "group by" qualifiers.
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics for filtering
 
         + Values
@@ -394,7 +408,7 @@ aggregate data, which can be used as "group by" qualifiers.
 
 
 
-## Deliverability Metrics by Domain [/metrics/deliverability/domain{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,order_by,limit}]
+## Deliverability Metrics by Domain [/metrics/deliverability/domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,order_by,limit}]
 
 + Model
 
@@ -577,10 +591,13 @@ Provides aggregate metrics grouped by domain over the time window specified.
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
   + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + metrics (required, list) ... Comma-delimited list of metrics for filtering
         
         + Values
@@ -631,9 +648,481 @@ Provides aggregate metrics grouped by domain over the time window specified.
   [Deliverability Metrics by Domain][]
 
 
+## Deliverability Metrics by Binding [/metrics/deliverability/binding{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
++ Model
+
+    + Body
+
+        ```
+        {
+          "results": [
+            {
+              "binding": "binding-0",
+              "count_targeted": 34432,
+              "count_injected": 32323,
+              "count_rejected": 2343,
+              "count_sent": 34344
+            },
+            {
+              "binding": "binding-1",
+              "count_targeted": 34432,
+              "count_injected": 32323,
+              "count_rejected": 2343,
+              "count_sent": 34344
+            }
+          ]
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type":"object",
+          "$schema": "http://json-schema.org/draft-03/schema",
+          "required":false,
+          "properties":{
+            "results": {
+              "type":"array",
+              "required":false,
+              "items":
+                {
+                  "type":"object",
+                  "required":false,
+                  "properties":{
+                    "binding": {
+                      "type":"string",
+                      "required":false
+                    },
+                    "count_accepted": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_admin_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_block_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_clicked": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delayed_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delayed": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered_subsequent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_generation_failed": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_generation_rejection": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_hard_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_inband_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_injected": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_outofband_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_policy_rejection": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_rejected": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_rendered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_sent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_soft_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_spam_complaint": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_targeted": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_undetermined_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_clicked": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_confirmed_opened": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_rendered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_delivery_time_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_delivery_time_subsequent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_msg_volume": {
+                      "type":"number",
+                      "required":false
+                    }
+                  }
+                }
+            }
+          }
+        }
+        ```
 
 
-## Deliverability Metrics by Campaign [/metrics/deliverability/campaign{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit,order_by}]
+### Deliverability Metrics by Binding [GET]
+
+Provides aggregate metrics grouped by binding over the time window specified.
+
++ Parameters
+  + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
+  + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
+  + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
+  + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
+  + metrics (required, list, `count_targeted`) ... Comma-delimited list of metrics for filtering
+      + Values
+          + `count_injected`
+          + `count_bounce`
+          + `count_rejected`
+          + `count_delivered`
+          + `count_delivered_first`
+          + `count_delivered_subsequent`
+          + `total_delivery_time_first`
+          + `total_delivery_time_subsequent`
+          + `total_msg_volume`
+          + `count_policy_rejection`
+          + `count_generation_rejection`
+          + `count_generation_failed`
+          + `count_inband_bounce`
+          + `count_outofband_bounce`
+          + `count_soft_bounce`
+          + `count_hard_bounce`
+          + `count_block_bounce`
+          + `count_admin_bounce`
+          + `count_undetermined_bounce`
+          + `count_delayed`
+          + `count_delayed_first`
+          + `count_rendered`
+          + `count_unique_rendered`
+          + `count_unique_confirmed_opened`
+          + `count_clicked`
+          + `count_unique_clicked`
+          + `count_targeted`
+          + `count_sent`
+          + `count_accepted`
+          + `count_spam_complaint`
+  + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
+  + limit (optional, int, `5`) ... Maximum number of results to return
+  + order_by (optional, string, `count_injected`) ... Metric by which to order results
+
++ Request
+
+  + Headers
+
+            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+            Accept: application/json
+
++ Response 200
+
+
+## Deliverability Metrics by Binding Group [/metrics/deliverability/binding-group{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
+
++ Model
+
+    + Body
+
+        ```
+        {
+          "results": [
+            {
+              "binding_group": "bg-0",
+              "count_targeted": 34432,
+              "count_injected": 32323,
+              "count_rejected": 2343,
+              "count_sent": 34344
+            },
+            {
+              "binding_group": "bg-1",
+              "count_targeted": 34432,
+              "count_injected": 32323,
+              "count_rejected": 2343,
+              "count_sent": 34344
+            }
+          ]
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type":"object",
+          "$schema": "http://json-schema.org/draft-03/schema",
+          "required":false,
+          "properties":{
+            "results": {
+              "type":"array",
+              "required":false,
+              "items":
+                {
+                  "type":"object",
+                  "required":false,
+                  "properties":{
+                    "binding_group": {
+                      "type":"string",
+                      "required":false
+                    },
+                    "count_accepted": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_admin_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_block_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_clicked": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delayed_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delayed": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered_subsequent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_delivered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_generation_failed": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_generation_rejection": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_hard_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_inband_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_injected": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_outofband_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_policy_rejection": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_rejected": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_rendered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_sent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_soft_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_spam_complaint": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_targeted": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_undetermined_bounce": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_clicked": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_confirmed_opened": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "count_unique_rendered": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_delivery_time_first": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_delivery_time_subsequent": {
+                      "type":"number",
+                      "required":false
+                    },
+                    "total_msg_volume": {
+                      "type":"number",
+                      "required":false
+                    }
+                  }
+                }
+            }
+          }
+        }
+        ```
+
+### Deliverability Metrics by Binding Group [GET]
+
+Provides aggregate metrics grouped by binding group over the time window specified.
+
++ Parameters
+  + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
+  + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
+  + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
+  + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
+  + metrics (required, list, `count_targeted`) ... Comma-delimited list of metrics for filtering
+      + Values
+          + `count_injected`
+          + `count_bounce`
+          + `count_rejected`
+          + `count_delivered`
+          + `count_delivered_first`
+          + `count_delivered_subsequent`
+          + `total_delivery_time_first`
+          + `total_delivery_time_subsequent`
+          + `total_msg_volume`
+          + `count_policy_rejection`
+          + `count_generation_rejection`
+          + `count_generation_failed`
+          + `count_inband_bounce`
+          + `count_outofband_bounce`
+          + `count_soft_bounce`
+          + `count_hard_bounce`
+          + `count_block_bounce`
+          + `count_admin_bounce`
+          + `count_undetermined_bounce`
+          + `count_delayed`
+          + `count_delayed_first`
+          + `count_rendered`
+          + `count_unique_rendered`
+          + `count_unique_confirmed_opened`
+          + `count_clicked`
+          + `count_unique_clicked`
+          + `count_targeted`
+          + `count_sent`
+          + `count_accepted`
+          + `count_spam_complaint`
+  + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
+  + limit (optional, int, `5`) ... Maximum number of results to return
+  + order_by (optional, string, `count_injected`) ... Metric by which to order results
+
++ Request
+
+  + Headers
+
+            Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+            Accept: application/json
+
++ Response 200 (application/json)
+
+  [Deliverability Metrics by Binding Group][]
+
+
+## Deliverability Metrics by Campaign [/metrics/deliverability/campaign{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
 
 
 + Model
@@ -818,7 +1307,12 @@ Provides aggregate metrics grouped by campaign over the time window specified.
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics for filtering
       
         + Values
@@ -869,7 +1363,7 @@ Provides aggregate metrics grouped by campaign over the time window specified.
   [Deliverability Metrics by Campaign][]
 
 
-## Deliverability Metrics by Template [/metrics/deliverability/template{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit,order_by}]
+## Deliverability Metrics by Template [/metrics/deliverability/template{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
 
 
 + Model
@@ -1054,7 +1548,12 @@ Provides aggregate metrics grouped by template over the time window specified.
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics for filtering
       
         + Values
@@ -1105,7 +1604,7 @@ Provides aggregate metrics grouped by template over the time window specified.
   [Deliverability Metrics by Template][]
 
 
-## Deliverability Metrics by Watched Domain [/metrics/deliverability/watched-domain{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit,order_by}]
+## Deliverability Metrics by Watched Domain [/metrics/deliverability/watched-domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit,order_by}]
 
 + Model
 
@@ -1291,7 +1790,12 @@ in the world.
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics for filtering
         + Values
             + `count_injected`
@@ -1341,7 +1845,7 @@ in the world.
   [Deliverability Metrics by Watched Domain][]
 
 
-## Time Series [/metrics/deliverability/time-series{?from,to,domains,campaigns,templates,sandbox,precision,metrics,timezone}]
+## Time Series [/metrics/deliverability/time-series{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,precision,metrics,timezone}]
 
 
 + Model
@@ -1580,7 +2084,12 @@ The following table describes the validation for the **precision** parameter:
     + domains (optional, list `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains for filtering
     + campaigns (optional, list, `summerSale,promotionX`) ... Comma-delimited list of campaigns for filtering
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes by which to filter
+    + bindings (optional, list, `bindingA,bindingB,bindingC`) ... Comma-delimited list of bindings for filtering
+    + binding_groups (optional, list, `bg1,bg2,bg3`) ... Comma-delimited list of binding groups for filtering
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
     + precision (optional, string, `day`) ... Precision of timeseries data returned
 
         + Values
@@ -1641,7 +2150,7 @@ The following table describes the validation for the **precision** parameter:
   [Time Series][]
 
 
-## Bounce Reasons [/metrics/deliverability/bounce-reason{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit}]
+## Bounce Reasons [/metrics/deliverability/bounce-reason{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit}]
 
 + Model
 
@@ -1741,7 +2250,12 @@ Provides deliverability metrics, specific to bounce events, grouped by the bounc
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols to include
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics to include
         
         + Values
@@ -1764,7 +2278,7 @@ Provides deliverability metrics, specific to bounce events, grouped by the bounc
   [Bounce Reasons][]
 
 
-## Bounce Reasons By Domain [/metrics/deliverability/bounce-reason/domain{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit}]
+## Bounce Reasons By Domain [/metrics/deliverability/bounce-reason/domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit}]
 
 + Model
 
@@ -1870,7 +2384,12 @@ Provides deliverability metrics, specific to bounce events, grouped by the domai
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3`) ... Comma-delimited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols to include
+        + Values
+            + `smtp`
     + metrics (required, list) ... Comma-delimited list of metrics to include
         
         + Values
@@ -1893,7 +2412,7 @@ Provides deliverability metrics, specific to bounce events, grouped by the domai
   [Bounce Reasons By Domain][]
 
 
-## Bounce Classifications [/metrics/deliverability/bounce-classification{?from,to,domains,campaigns,templates,sandbox,metrics,timezone,limit}]
+## Bounce Classifications [/metrics/deliverability/bounce-classification{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,metrics,timezone,limit}]
 
 + Model
 
@@ -1977,7 +2496,7 @@ Provides deliverability metrics, specific to bounce events, grouped by the domai
 
 ### Bounce Classification Metrics [GET]
 
-Provides deliverability metrics, specific to bounce events, grouped by the bounce classification. (See [Bounce Classification Codes.](https://www.sparkpost.com/docs/bounce-classification-codes))
+Provides deliverability metrics, specific to bounce events, grouped by the bounce classification. (See [Bounce Classification Codes.](https://support.messagesystems.com/docs/web-momo4/bounce_logger.classification.codes.php))
 
 + Parameters
     + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
@@ -1985,7 +2504,12 @@ Provides deliverability metrics, specific to bounce events, grouped by the bounc
     + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
     + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
     + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-    + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
+    + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-5`limited list of nodes to include
+    + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+    + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+    + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+        + Values
+            + `smtp`
     + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
     + metrics (required, list) ... Comma-delimited list of metrics to include
         
@@ -2008,7 +2532,7 @@ Provides deliverability metrics, specific to bounce events, grouped by the bounc
   [Bounce Classifications][]
 
 
-## Rejection Reasons [/metrics/deliverability/rejection-reason{?from,to,domains,campaigns,templates,sandbox,timezone,limit}]
+## Rejection Reasons [/metrics/deliverability/rejection-reason{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone,limit}]
 
 + Model
 
@@ -2081,10 +2605,13 @@ Provides deliverability metrics, specific to rejection events, grouped by the re
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
   + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
   + limit (optional, int, `5`) ... Maximum number of results to return
 
@@ -2093,7 +2620,7 @@ Provides deliverability metrics, specific to rejection events, grouped by the re
   [Rejection Reasons][]
 
 
-## Rejection Reasons By Domain [/metrics/deliverability/rejection-reason/domain{?from,to,domains,campaigns,templates,sandbox,timezone,limit}]
+## Rejection Reasons By Domain [/metrics/deliverability/rejection-reason/domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone,limit}]
 
 + Model
 
@@ -2171,11 +2698,14 @@ Provides deliverability metrics, specific to rejection events, grouped by the do
   + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
-  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
   + limit (optional, int, `5`) ... Maximum number of results to return
 
@@ -2184,7 +2714,7 @@ Provides deliverability metrics, specific to rejection events, grouped by the do
   [Rejection Reasons By Domain][]
 
 
-## Delay Reasons [/metrics/deliverability/delay-reason{?from,to,domains,campaigns,templates,sandbox,timezone,limit}]
+## Delay Reasons [/metrics/deliverability/delay-reason{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone,limit}]
 
 + Model
 
@@ -2250,11 +2780,14 @@ Provides deliverability metrics, specific to delay events, grouped by the delay 
   + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
-  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
   + limit (optional, int, `5`) ... Maximum number of results to return
 
@@ -2270,7 +2803,7 @@ Provides deliverability metrics, specific to delay events, grouped by the delay 
   [Delay Reasons][]
 
 
-## Delay Reasons By Domain [/metrics/deliverability/delay-reason/domain{?from,to,domains,campaigns,templates,sandbox,timezone,limit}]
+## Delay Reasons By Domain [/metrics/deliverability/delay-reason/domain{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone,limit}]
 
 + Model
 
@@ -2342,11 +2875,14 @@ Provides deliverability metrics, specific to delay events, grouped by the domain
   + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
-  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
+  + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
   + limit (optional, int, `5`) ... Maximum number of results to return
 
@@ -2450,7 +2986,7 @@ name (or URL if no link name exists).
   [Engagement Details][]
 
 
-## Deliveries By Attempt [/metrics/deliverability/attempt{?from,to,domains,campaigns,templates,sandbox,timezone}]
+## Deliveries By Attempt [/metrics/deliverability/attempt{?from,to,domains,campaigns,templates,nodes,bindings,binding_groups,protocols,timezone}]
 
 + Model
 
@@ -2511,10 +3047,13 @@ Provides aggregate count of deliveries grouped by the attempt number.
   + to = `now` (optional, datetime, `2014-07-20T09:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
   + domains (optional, list, `gmail.com,yahoo.com,hotmail.com`) ... Comma-delimited list of domains to include
   + campaigns (optional, list, `Black Friday`) ... Comma-delimited list of campaigns to include
-  
   + templates (optional, list, `summer-sale`) ... Comma-delimited list of template IDs to include
-  + sandbox (optional, string, `true`) ... Restrict the query to events generated with a sandbox sending domain
-  
+  + nodes (optional, list, `Email-MSys-1,Email-MSys-2,Email-MSys-3,Email-MSys-4,Email-MSys-5`) ... Comma-delimited list of nodes to include
+  + bindings (optional, list, `Confirmation`) ... Comma-delimited list of bindings to include
+  + binding_groups (optional, list, `Transaction`) ... Comma-delimited list of binding groups to include
+  + protocols (optional, list, `smtp`) ... Comma-delimited list of protocols for filtering
+      + Values
+          + `smtp`
   + timezone =`UTC` (optional, string, `America/New_York`) ... Standard timezone identification string, defaults to `UTC`
 
 + Request
@@ -2528,6 +3067,125 @@ Provides aggregate count of deliveries grouped by the attempt number.
 
   [Deliveries By Attempt][]
 
+## Binding Groups List [/metrics/binding-groups]
+
++ Model (application/json)
+
+    + Body
+
+        ```
+        {
+          "results": {
+             "binding-groups": [
+             "bg-1",
+             "bg-2",
+             "bg-3",
+             "bg-4",
+             "bg-5"
+            ]
+          }
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "results": {
+              "type": "object",
+              "required": true,
+              "properties": {
+                "binding-groups": {
+                  "type": "array",
+                  "required": false
+                }
+              }
+            }
+          }
+        }
+        ```
+
+### Binding Groups List [GET]
+
+Returns a list of binding groups that the Metrics API contains data on.
+
++ Parameters
+    + match (optional, string, `example`) ... Only return results containing this string
+    + limit (optional, int, `5`) ... Maximum number of results to return
+
++ Request
+
+  + Headers
+      Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+      Accept: application/json
+
+
++ Response 200
+
+    [Binding Groups List][]
+
+
+## Bindings List [/metrics/bindings]
+
++ Model (application/json)
+
+    + Body
+
+        ```
+        {
+          "results": {
+             "bindings": [
+               "binding-1",
+               "binding-2",
+               "binding-3",
+               "binding-4",
+               "binding-5"
+            ]
+          }
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "results": {
+              "type": "object",
+              "required": true,
+              "properties": {
+                "bindings": {
+                  "type": "array",
+                  "required": false
+                }
+              }
+            }
+          }
+        }
+        ```
+
+### Bindings List [GET]
+
+Returns a list of bindings that the Metrics API contains data on.
+
++ Parameters
+    + match (optional, string, `example`) ... Only return results containing this string
+    + limit (optional, int, `5`) ... Maximum number of results to return
+
++ Request
+
+  + Headers
+      Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+      Accept: application/json
+
++ Response 200
+
+ [Bindings List][]
 
 
 ## Campaigns List [/metrics/campaigns]
@@ -2576,7 +3234,7 @@ Provides aggregate count of deliveries grouped by the attempt number.
 Returns a list of campaigns that the Metrics API contains data on.
 
 + Parameters
-    + match (optional, string, `example`) ... Only return results containing this string 
+    + match (optional, string, `example`) ... Only return results containing this string
     + limit (optional, int, `5`) ... Maximum number of results to return
 
 + Request
@@ -2637,7 +3295,7 @@ Returns a list of campaigns that the Metrics API contains data on.
 Returns a list of domains that the Metrics API contains data on.
 
 + Parameters
-    + match (optional, string, `example`) ... Only return results containing this string 
+    + match (optional, string, `example`) ... Only return results containing this string
     + limit (optional, int, `5`) ... Maximum number of results to return
 
 + Request
@@ -2650,3 +3308,114 @@ Returns a list of domains that the Metrics API contains data on.
 + Response 200
 
   [Domains List][]
+
+## Nodes List [/metrics/nodes]
+
++ Model (application/json)
+
+    + Body
+
+        ```
+        {
+          "results": {
+             "nodes": [
+               "advertising-1.example.com",
+               "advertising-2.example.com",
+               "affiliate-1.example.com",
+               "affiliate-2.example.com",
+               "affiliate-3.example.com"
+            ]
+          }
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "results": {
+              "type": "object",
+              "required": true,
+              "properties": {
+                "nodes": {
+                  "type": "array",
+                  "required": false
+                }
+              }
+            }
+          }
+        }
+        ```
+
+### Nodes List [GET]
+
+Returns a list of nodes that the Metrics API contains data on.
+
++ Request
+
+  + Headers
+      Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+      Accept: application/json
+
++ Response 200
+
+ [Nodes List][]
+
+
+## Protocols List [/metrics/protocols]
+
++ Model (application/json)
+
+    + Body
+
+        ```
+        {
+          "results": {
+             "protocols": [
+               "smtp",
+               "smpp",
+               "mm7",
+               "gcm",
+               "apns"
+            ]
+          }
+        }
+        ```
+
+    + Schema
+
+        ```
+        {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "results": {
+              "type": "object",
+              "required": true,
+              "properties": {
+                "protocols": {
+                  "type": "array",
+                  "required": false
+                }
+              }
+            }
+          }
+        }
+        ```
+
+### Protocols List [GET]
+
+Returns a list of protocols that the Metrics API contains data on.
+
++ Request
+
+  + Headers
+      Authorization: 14ac5499cfdd2bb2859e4476d2e5b1d2bad079bf
+      Accept: application/json
+
++ Response 200
+
+ [Protocols List][]
