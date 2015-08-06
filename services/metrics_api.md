@@ -2496,7 +2496,7 @@ Provides deliverability metrics, specific to bounce events, grouped by the domai
 
 ### Bounce Classification Metrics [GET]
 
-Provides deliverability metrics, specific to bounce events, grouped by the bounce classification. (See [Bounce Classification Codes.](https://support.messagesystems.com/docs/web-momo4/bounce_logger.classification.codes.php))
+Provides deliverability metrics, specific to bounce events, grouped by the bounce classification.
 
 + Parameters
     + from (required, datetime, `2014-07-11T08:00`) ... Datetime in format of YYYY-MM-DDTHH:MM
