@@ -47,9 +47,6 @@ with a digit, with the exception of the following keywords:
 **Metadata**: Transmissions and recipients also support a "metadata" JSON object.
 Metadata can be used in substitutions in the same way as substitution data.
 
-
-
-
 ### Template Start and End Markers
 
 As with some other templating languages, the start and end markers are defined as double curly braces.  For example:
@@ -775,14 +772,10 @@ Your total is {{ total_cost(items) }}
 Your haircolor is {{ hair_color(person.username) }}
 ```
 
-*Note:*
-
 The custom macro will be called when generating a message for each recipient in the transmission.
 The generation jobs run in a threadpool. The custom macro may execute work such as database lookups.
 The developer of a custom macro must be aware that this will increase the latency of the generation process,
 because each database lookup will increase the time taken to complete generation for a particular recipient.
-
-
 
 ###  Reserved Recipient Substitution Variables
 
@@ -827,9 +820,4 @@ then that part will be quoted-printable encoded before being placed back into th
 MIME structure.  The Content-Type will be updated appropriately.
 * If after substitution, a header value contains 8-bit data, then the header
 value will be RFC2047 base64 encoded before being written back to the headers structure.
-
-
-### Substitutions in MCMT
-
-See [MCMT](https://support.messagesystems.com/docs/web-momo4/conf.ref.changes.mcmt.php).
 

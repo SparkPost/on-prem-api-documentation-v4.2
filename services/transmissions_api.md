@@ -14,9 +14,9 @@ In addition, engagement tracking options can be set in the transmission to track
 |recipients | JSON array or JSON object | Inline recipient objects or object containing stored recipient list ID |yes | Specify a stored recipient list or specify recipients inline.  When using a stored recipient list, specify the "list_id" as described in Using a Stored Recipient List.  Otherwise, provide the recipients inline using the fields described in the Recipient List API documentation for Recipient Attributes. |
 |campaign_id | string |Name of the campaign|no|Maximum length - 64 bytes| 
 |description | string |Description of the transmission|no | Maximum length - 1024 bytes| 
-|metadata|JSON object|Transmission level metadata containing key/value pairs |no| Metadata is available during events through the Webhooks, is written to the jlog files based on the [event_hydrant](https://support.messagesystems.com/docs/web-momo4/modules.event_hydrant.php) module, and is provided to the substitution engine.  A maximum of 200 bytes of merged metadata (transmission level + recipient level) is available with recipient metadata taking precedence over transmission metadata when there are conflicts. Metadata can be excluded from Click events by setting an option in the [engagement_tracker](https://support.messagesystems.com/docs/web-momo4/modules.engage_tracker.php) module. |
+|metadata|JSON object|Transmission level metadata containing key/value pairs |no| Metadata is available during events through the Webhooks, is written to the jlog files based on the event_hydrant module, and is provided to the substitution engine.  A maximum of 200 bytes of merged metadata (transmission level + recipient level) is available with recipient metadata taking precedence over transmission metadata when there are conflicts. Metadata can be excluded from Click events by setting an option in the engagement_tracker module. |
 |substitution_data|JSON object|Key/value pairs that are provided to the substitution engine| no | Recipient substitution data takes precedence over transmission substitution data. Unlike metadata, substitution data is not included in Webhook events. |
-|return_path | string |Email to use for envelope FROM | yes | To support [VERP] (https://support.messagesystems.com/docs/web-momo4/glossary.php#gloss.verp), this field can also optionally be specified inside of the address object of a specific recipient in order to give the recipient a unique envelope MAIL FROM.|
+|return_path | string |Email to use for envelope FROM | yes | To support Variable Envelope Return Path (VERP), this field can also optionally be specified inside of the address object of a specific recipient in order to give the recipient a unique envelope MAIL FROM.|
 |content| JSON object | Content that will be used to construct a message | yes | Specify a stored template or specify inline template content. When using a stored template, specify the "template_id" as described in Using a Stored Template.  Otherwise, provide the inline content using the fields described in the Templates API documentation for Content Attributes.  Maximum size - 15MBs|
 |total_recipients | number | Computed total recipients | no | Read only|
 |num_generated | number | Computed total number of messages generated | no |Read only|
@@ -28,8 +28,8 @@ In addition, engagement tracking options can be set in the transmission to track
 | Field         | Type     | Description                           | Required   | Notes   |
 |------------------------|:-:       |---------------------------------------|-------------|--------|
 |start_time | string | Delay generation of messages until this datetime.  For additional information, see Scheduled Transmissions. |no - defaults to immediate generation | Format YYYY-MM-DDTHH:MM:SS+-HH:MM or "now". Example: '2015-02-11T08:00:00-04:00'.|
-|open_tracking|boolean| Whether open tracking is enabled for this transmission| no |If not specified, the setting at template level or [msg_gen](https://support.messagesystems.com/docs/web-momo4/modules.msg_gen.php) module level is used in that order. | 
-|click_tracking|boolean| Whether click tracking is enabled for this transmission| no |If not specified, the setting at template level or [msg_gen](https://support.messagesystems.com/docs/web
+|open_tracking|boolean| Whether open tracking is enabled for this transmission| no |If not specified, the setting at template level or msg_gen module level is used in that order. | 
+|click_tracking|boolean| Whether click tracking is enabled for this transmission| no |If not specified, the setting at template level or msg_gen module level is used in that order. | 
 
 ### Using a Stored Template
 
@@ -50,12 +50,6 @@ The following recipients attribute is used when specifying a stored recipient li
 
 ## Scheduled Transmissions
 Use the _options.start_time_ attribute to delay generation of messages.  The scheduled time must be in the future and by default cannot be greater than 1 year from the time of submission.  If the scheduled time does not fall in that range, the transmission is not accepted.
-
-Set the start_time_max_schedule_interval option in the [msg_gen](https://support.messagesystems.com/docs/web-momo4/modules.msg_gen.php) module to configure how far in the future the message generation may be delayed.
-
-## Transactional Transmissions
-A transactional transmission has only one recipient. Set the gen_transactional_threads option in the
-[msg_gen](https://support.messagesystems.com/docs/web-momo4/modules.msg_gen.php) module to ensure that transactional transmissions are handled efficiently by minimizing database access wherever possible. 
 
 ## Create [/transmissions{?num_rcpt_errors}]
  
@@ -533,7 +527,7 @@ List an array of transmission summary objects.  A transmission summary object co
 * Transmissions for a campaign
 * Transmissions for a campaign that use a specific template
 
-If the gen_transactional_threads option in the [msg_gen](https://support.messagesystems.com/docs/web-momo4/modules.msg_gen.php) module is set to skip the database for transactional transmissions, this endpoint will not return single recipient transmissions.
+If the gen_transactional_threads option in the msg_gen module is set to skip the database for transactional transmissions, this endpoint will not return single recipient transmissions.
 
 By default, the list includes all transmissions for all campaigns.  Use the **template_id** parameter to specify a template and the **campaign_id** parameter to specify a campaign.
 

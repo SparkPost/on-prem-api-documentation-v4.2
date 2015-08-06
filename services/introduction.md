@@ -23,7 +23,7 @@ Momentum API enables client applications to integrate with Momentum and perform 
 * All API's require that you authenticate with every request.
 * To authenticate with the various API's, specify the "Authorization" header with each request.
 * The value of the "Authorization" header must be a valid API key.
-* Administrators can generate an API key using the UI. For detailed instructions, see [API Keys](https://support.messagesystems.com/docs/web-momo4/web-ui.apikeys.php).
+* Administrators can generate an API key using the UI.
 * Please take care to record and safeguard your API keys at all times. You cannot retrieve an API key after it has been created.
 * For examples of supplying the Authorization header, refer to the cURL example below or any of the individual API request examples.
 * API authentication is enabled by default. If your system administrator has disabled API authentication, the "Authorization" header, shown in the examples, is no longer required.
